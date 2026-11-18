@@ -233,7 +233,7 @@ const LINES={move:['네, 알겠습니다!','이동합니다!','갑니다!','알�
   kill:['명중! 한 놈 잡았습니다!','적 사살!','쓰러뜨렸습니다!'],spot:['적 발견!','전방에 적입니다!','적이 보입니다!'],gren:['수류탄 투척!','수류탄 갑니다!'],incoming:['수류탄이다! 엎드려!','수류탄! 피해!'],
   down:['의무병! 의무병!','전우가 쓰러졌습니다!'],medic:['버텨라, 금방 간다!','응급처치 들어갑니다!'],healed:['응급처치 끝났습니다!','살았다, 정신 차려!'],resup:['탄약 보급받았습니다!','탄창 채웠습니다!'],
   hold:['사격 중지!','쏘지 않겠습니다.'],aim:['아껴 쏘겠습니다.','한 발씩 정확히 쏘겠습니다.'],norm:['알겠습니다.'],fsupp:['제압사격 실시합니다!','퍼붓겠습니다!'],
-  flare:['조명탄 올라갑니다!'],smoke:['연막탄 투척!','연막 칩니다!'],lootf:['전우의 총을 쓰겠습니다!','저 총 제가 가져오겠습니다!'],lootedf:['총 넘겨받았습니다!','이 총으로 계속 싸우겠습니다!'],tired:['숨이 찹니다…!','더는 못 뜁니다!'],melee:['착검! 돌격!','이야아!','받아라!','물러서지 마라!'],corner:['모퉁이에서 쏘겠습니다!','벽에 붙어 사격합니다!'],jam:['총이 걸렸습니다!','기능 고장! 처치 중!'],broken:['총이 고장났습니다!','총이 망가졌습니다!'],loot:['적 총을 줍겠습니다!','저 총 가져오겠습니다!'],looted:['적 총을 확보했습니다!','이거라도 쓰겠습니다!'],wave:['적이다! 사격 개시!','온다! 각자 위치로!','침착하게 조준해라!'],cap:['점령했습니다!','이상 없습니다, 확보!'],stop:['정지!','대기하겠습니다.']};
+  flare:['조명탄 올라갑니다!'],rally:['고개 들어! 침착하게 쏴라!','겁먹지 마라, 내가 여기 있다!','자리 지켜! 응사해!'],smoke:['연막탄 투척!','연막 칩니다!'],lootf:['전우의 총을 쓰겠습니다!','저 총 제가 가져오겠습니다!'],lootedf:['총 넘겨받았습니다!','이 총으로 계속 싸우겠습니다!'],tired:['숨이 찹니다…!','더는 못 뜁니다!'],melee:['착검! 돌격!','이야아!','받아라!','물러서지 마라!'],corner:['모퉁이에서 쏘겠습니다!','벽에 붙어 사격합니다!'],jam:['총이 걸렸습니다!','기능 고장! 처치 중!'],broken:['총이 고장났습니다!','총이 망가졌습니다!'],loot:['적 총을 줍겠습니다!','저 총 가져오겠습니다!'],looted:['적 총을 확보했습니다!','이거라도 쓰겠습니다!'],wave:['적이다! 사격 개시!','온다! 각자 위치로!','침착하게 조준해라!'],cap:['점령했습니다!','이상 없습니다, 확보!'],stop:['정지!','대기하겠습니다.']};
 /* ───── 시나리오 ───── */
 const SC=[
 {id:'nakdong',ord:19500815,crate:[28,26],title:'다부동 능선',date:'1950년 8월 · 낙동강 방어선',theme:'summer',faction:'nk',seed:11,
@@ -520,7 +520,7 @@ function renderHQ(){
       <b>철수</b> — 작전 도중 철수하면 걸을 수 있는 병사만 돌아옵니다. 쓰러진 병사는 부상자든 전사자든 적진에 남겨져 포로로 기록되고 분대에서 빠집니다.<br>
       <b>모퉁이</b> — 벽이나 바위 옆에 멈춰 선 병사는 알아서 모퉁이 밖으로 몸을 내밀어 살피고 쏩니다. 내민 동안에도 엄폐 60%를 받고, 쏠 상대가 없으면 벽 뒤에 숨어 보이지 않습니다. 옆으로 돌아와 몸통이 보이는 적에게는 엄폐가 통하지 않습니다. 적도 똑같이 모퉁이를 씁니다.<br>
       <b>백병전</b> — 적과 한 칸 남짓까지 붙으면 사격 대신 총검으로 싸웁니다. 민첩성과 강인함이 높을수록, 상대가 제압당해 있을수록 유리합니다. 네 칸 안의 적을 오른쪽 클릭하면 달려들어 찌르고, 탄약이 없거나 총이 고장난 병사는 거리와 상관없이 돌격합니다. 적도 가까워지면 달려듭니다.<br>
-      <b>분대장</b> — 출동하는 대원 중 계급이 가장 높은 병사가 자동으로 분대장이 됩니다(계급이 같으면 경험이 많은 쪽). 병적부와 전투 화면에 ★ 표시가 붙습니다. 분대장 둘레 일곱 칸(지도의 점선 원) 안에 있는 대원은 제압을 30% 덜 받고 70% 빨리 회복합니다. 지휘를 받는 병사는 머리 옆에 노란 점이 붙습니다. 분대장이 쓰러지면 분대 전체가 크게 동요합니다.<br>
+      <b>분대장</b> — 출동하는 대원 중 계급이 가장 높은 병사가 자동으로 분대장이 됩니다(계급이 같으면 경험이 많은 쪽). 병적부와 전투 화면에 ★ 표시가 붙습니다. 분대장 둘레 일곱 칸(지도의 점선 원) 안에 있는 대원은 제압을 45% 덜 받고 두 배 넘게 빨리 회복하며, 공황에 빠지지 않습니다. 대원이 엎드려 꼼짝 못 하면 분대장이 다그쳐 일으킵니다. 지휘를 받는 병사는 머리 옆에 노란 점이 붙습니다. 분대장이 쓰러지면 분대 전체가 크게 동요합니다.<br>
       <b>장비</b> — 병적부에서 병사마다 총기, 탄창, 수류탄, 구급낭 수를 정합니다. 휴대 한도는 10kg + 체력×1.5kg이고, 넘게는 들 수 없습니다. 무거울수록 느려지고 빨리 지칩니다(전투 카드의 파란 막대). 지치면 느려지고 명중률이 떨어지며, 탈진하면 뛰지 못합니다. 멈춰 서면 회복합니다. 병과는 든 총에 따라 소총수·자동소총수·저격수로 정해지고, 구급낭을 든 병사는 누구든 응급처치를 할 수 있습니다.<br>
       <b>충원</b> — 병적부의 「신병 충원」을 누르면 신병이 한 명 들어옵니다. 정원은 12명이고, 신병은 능력치가 낮습니다. 인원이 줄어도 자동으로 채워지지 않습니다.<br>
       <b>연막탄</b> — 연막탄(V)을 던지면 2초 뒤부터 30초 동안 지름 여섯 칸의 연막이 퍼집니다. 연막은 양쪽 모두의 시야와 사선을 막습니다. 연막 속에서는 바로 옆만 보입니다. 기관총 앞을 가로지르거나 부상병을 구하러 갈 때 쓰십시오. 병사마다 기본 한 발이고 장비에서 세 발까지 늘릴 수 있습니다(개당 0.5kg).<br>
@@ -668,7 +668,7 @@ const nearestPl=(p,rad=99)=>{let b=null,bd=rad;for(const u of B.pl)if(ok(u)){con
 function ftext(u,s,c){B.texts.push({x:u.x,y:u.y-.6,s,c,t:0})}
 
 /* ───── 전투 로직 ───── */
-function suppress(u,v){if(!ok(u))return;const a=v*(1-u.tough/160)*(u.led?.7:1);const was=u.supp;u.supp=Math.min(100,u.supp+a);u.st.supp+=a;
+function suppress(u,v){if(!ok(u))return;const a=v*(1-u.tough/160)*(u.led?.55:1);const was=u.supp;u.supp=Math.min(u.led?85:100,u.supp+a);u.st.supp+=a;
   if(u.side==='p'){if(was<=88&&u.supp>88)say(u,'panic',1);else if(was<=55&&u.supp>55)say(u,'supp')}}
 function damage(t,d,src,expl){if(!ok(t))return;t.hp-=d;t.st.dmg+=d;suppress(t,14);
   B.decals.push({k:'b',x:t.x+rnd(-.3,.3),y:t.y+rnd(-.3,.3),r:rnd(2,4)});
@@ -731,7 +731,8 @@ function aiThink(u,dt){const a=u.ai;a.t-=dt;if(a.t>0)return;const tick=.45+rnd(.
 function updUnit(u,dt){
   if(u.state==='down'&&!u.stab){u.bleed-=dt;if(u.bleed<=0){u.state='dead';log(`${u.rank} ${u.name} 출혈로 전사`,'#ff8a7a')}}
   if(!ok(u))return;
-  let dec=3+u.tough*.06;if(u.side==='p'){const L=B.pl.find(p=>p.role==='leader'&&ok(p));u.led=!!(L&&L!==u&&dist(L,u)<7);if(u.led)dec*=1.7}
+  let dec=3+u.tough*.06;if(u.side==='p'){const L=B.pl.find(p=>p.role==='leader'&&ok(p));const wasLed=u.led;u.led=!!(L&&L!==u&&dist(L,u)<7);if(u.led){dec*=2.2;if(u.supp>55&&B.rt-(B.lastRally||-99)>9){B.lastRally=B.rt;say(L,'rally',1)}}
+    if(u.led&&!wasLed&&u.supp>70)u.supp=70}
   u.supp=Math.max(0,u.supp-dec*dt);u.revealT-=dt;u.knownT-=dt;u.cd-=dt;
   const pinned=u.supp>55,panic=u.supp>88;
   if(u.side==='e')aiThink(u,dt);
@@ -990,7 +991,7 @@ function updHUD(force){if(!force&&B.hudT>0)return;B.hudT=.15;const ph=B.ph;let s
   const cards=$('squad').children;B.pl.forEach((u,i)=>{const c=cards[i];if(!c)return;c.classList.toggle('sel',B.sel.has(u));c.classList.toggle('dn',!ok(u));
     const st=u.state==='dead'?'전사':u.state==='down'?(u.stab?'중상·안정':`출혈 ${mm(u.bleed)}`):u.supp>88?'공황':u.supp>55?'제압됨':u.healT>0?'치료 중':u.broken?'총기 고장':u.jamT>0?'기능 고장 처치':u.lootT>0&&u.lootTgt?'총기 노획 중':u.ammo<=0&&u.res<=0?'탄약 없음':u.reloadT>0?'재장전':u.moving?{walk:'전진',run:'질주',sneak:'포복'}[u.mode]:u.inMelee?'백병전':u.lean?'모퉁이 사격':u.target?'교전':u.holdFire?'사격 중지':'대기';
     c.children[2].textContent=st;c.children[2].style.color=u.state!=='ok'||u.supp>55||u.broken||(u.ammo<=0&&u.res<=0)?'var(--danger)':'';
-    c.children[3].textContent=`${u.w.n} ${u.ammo}+${u.res}발 · ${FM[u.fm]}사격 · 수류탄 ${u.gren}${u.smoke?` · 연막 ${u.smoke}`:''}${u.kitsMax?` · 구급낭 ${u.kits}`:''}${u.fat>60?` · ${u.fat>90?'탈진':'지침'}`:''}`;
+    c.children[3].textContent=`${u.w.n} ${u.ammo}+${u.res}발 · ${FM[u.fm]}사격 · 수류탄 ${u.gren}${u.smoke?` · 연막 ${u.smoke}`:''}${u.kitsMax?` · 구급낭 ${u.kits}`:''}${u.fat>60?` · ${u.fat>90?'탈진':'지침'}`:''}${u.led?' · ★지휘':''}`;
     c.children[4].children[0].firstChild.style.width=(u.hp/u.maxhp*100)+'%';c.children[4].children[1].firstChild.style.width=u.supp+'%';c.children[4].children[2].firstChild.style.width=(u.fat||0)+'%'})}
 
 /* ───── 입력 ───── */
