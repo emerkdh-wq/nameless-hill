@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>무명고지 분대전</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 야전 상황판. 본부는 병적부(좌) + 작전 목록(우), 전투는 지도 한 장과 그 아래 분대 명령판. 단일 다크 테마(야전 천막 안 등불 아래). */
+:root{
+  color-scheme:dark;
+  --bg:#191b14; --panel:#23261b; --panel2:#2c3022; --ink:#e7e1c8; --muted:#9d977c; --line:#444933;
+  --accent:#c8a13a; --accent-ink:#1a1608; --olive:#7f9148; --danger:#d2604e; --blue:#6fa3c4;
+  --display:'Black Han Sans','Noto Sans KR',system-ui,sans-serif;
+  --body:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.02em}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:3px;padding:7px 12px;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.on{background:var(--olive);color:#12150a;border-color:var(--olive);font-weight:700}
+.btn.warn{color:var(--danger)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+kbd{font:600 10px var(--body);border:1px solid currentColor;border-radius:2px;padding:0 3px;opacity:.7;margin-left:4px}
+
+/* 본부 */
+.mast{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;border-bottom:3px double var(--line);padding-bottom:10px}
+.mast h1{font-size:34px;color:var(--accent);line-height:1.1}
+.mast .unit{color:var(--muted);font-size:13px}
+.mast .sp{flex:1}
+.hq{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:860px){.hq{grid-template-columns:minmax(0,1fr)}}
+.sec-h{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
+.sec-h h2{font-size:20px}
+.sec-h small{color:var(--muted)}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.sol{background:var(--panel);border:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sol.go{border-color:var(--olive)}
+.sol.out{opacity:.72}
+.sol .top{display:flex;align-items:center;gap:8px}
+.rank{font-family:var(--display);color:var(--accent);font-size:15px;white-space:nowrap}
+.nm{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed var(--line);color:var(--ink);font:700 16px var(--body);padding:1px 2px}
+.nm:hover{border-bottom-color:var(--muted)}
+.role{color:var(--muted);font-size:12px}
+.stats{display:grid;grid-template-columns:auto 1fr auto auto;gap:3px 8px;align-items:center;font-size:12px}
+.stats .pips{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}
+.stats .pips i{height:8px;background:#15170f;border:1px solid var(--line)}
+.stats .pips i.f{background:var(--olive);border-color:var(--olive)}
+.stats .pips.lo i.f{background:var(--danger);border-color:var(--danger)}
+.stats .pips.hi i.f{background:var(--blue);border-color:var(--blue)}
+.stats b.lo{color:var(--danger)}.stats b.hi{color:var(--blue)}
+.gear{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12px;color:var(--muted);border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);padding:6px 0}
+.gear select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);font:inherit;padding:2px 4px;max-width:100%}
+.stp{white-space:nowrap}.stp b{display:inline-block;min-width:18px;text-align:center;color:var(--ink);font-variant-numeric:tabular-nums}
+.stp button{width:20px;height:20px;padding:0;line-height:1;background:var(--panel2);border:1px solid var(--line);border-radius:3px}
+.wt{display:flex;align-items:center;gap:6px;flex:1 1 100%}.wt b{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wbar{flex:1;height:6px;background:#15170f;border:1px solid var(--line)}.wbar i{display:block;height:100%;background:var(--olive)}.wt.hv .wbar i{background:var(--accent)}
+.uc .ft i{background:var(--blue)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tabs .btn{padding:4px 10px;font-size:13px}
+.empty{color:var(--muted);margin:8px 0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;margin-right:4px;vertical-align:-1px}
+.up{width:22px;height:22px;padding:0;line-height:1;background:var(--accent);color:var(--accent-ink);border:0;border-radius:3px;font-weight:700}
+.up:disabled{visibility:hidden}
+.pts{color:var(--accent);font-weight:700}
+.stats b{font-variant-numeric:tabular-nums;font-weight:500}
+.sol .foot{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.sol .foot .sp{flex:1}
+.tag{font-size:11px;border:1px solid currentColor;padding:0 5px;border-radius:2px;white-space:nowrap}
+.tag.w{color:var(--danger)}
+.ops{display:flex;flex-direction:column;gap:8px}
+.op{background:var(--panel);border:1px solid var(--line);padding:10px 12px;text-align:left;display:block;width:100%}
+.op.sel{border-color:var(--accent);background:var(--panel2)}
+.op.lock{opacity:.45;cursor:not-allowed}
+.op .d{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.df{letter-spacing:0;white-space:nowrap;color:var(--olive)}.df.d3{color:var(--accent)}.df.d4,.df.d5{color:var(--danger)}
+.op{padding:7px 12px}.op h3{font-size:17px;margin:1px 0 2px}
+.op p{margin:0;font-size:12.5px;color:var(--muted)}
+.op .ok{color:var(--olive);font-weight:700;font-size:12px}
+.go-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.fallen{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:8px;margin-top:6px}
+.fallen li{margin:2px 0}
+.help{font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:10px 12px}
+.help b{color:var(--ink)}
+
+/* 전투 */
+#battle{gap:8px}
+.bar-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.bar-top h2{font-size:18px;color:var(--accent)}
+.obj{flex:1;min-width:200px;font-size:13px}
+.obj b{color:var(--accent)}
+.stage{position:relative;width:min(100%,calc((100vh - 235px)*1.647));min-width:min(100%,520px);margin:0 auto;border:1px solid var(--line);background:#000;line-height:0}
+#cv{width:100%;height:auto;display:block;touch-action:none;cursor:crosshair}
+#log{position:absolute;left:8px;top:8px;font-size:12px;line-height:1.45;color:#fff;text-shadow:0 1px 2px #000,0 0 4px #000;pointer-events:none;max-width:60%}
+#log div{transition:opacity .6s}
+#lootmenu{position:absolute;z-index:3;background:rgba(20,22,14,.96);border:1px solid var(--accent);padding:8px;display:flex;flex-direction:column;gap:5px;line-height:1.4;font-size:12.5px;min-width:170px}
+#lootmenu .btn{text-align:left;padding:5px 9px}
+#banner{position:absolute;right:8px;top:8px;font:400 14px var(--display);color:var(--accent);background:rgba(0,0,0,.6);padding:3px 9px;line-height:1.4;pointer-events:none}
+.ovl{position:absolute;inset:0;background:rgba(15,16,10,.88);display:flex;align-items:center;justify-content:center;line-height:1.55;padding:16px;overflow:auto}
+.ovl .box{max-width:560px;display:flex;flex-direction:column;gap:10px}
+.ovl h2{font-size:28px;color:var(--accent)}
+.ovl p{margin:0}
+.ovl ul{margin:0;padding-left:18px;color:var(--muted);font-size:13px}
+.orders{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.orders .btn{padding:6px 10px;font-size:13px}
+.squad{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.uc{background:var(--panel);border:1px solid var(--line);padding:6px 8px;text-align:left;display:grid;grid-template-columns:auto 1fr auto;gap:2px 6px;align-items:center;font-size:12px;min-width:0}
+.uc.sel{border-color:var(--accent);background:var(--panel2)}
+.uc.dn{opacity:.55}
+.uc .num{font-family:var(--display);font-size:18px;color:var(--accent);grid-row:span 2}
+.uc .un{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uc .stt{color:var(--muted);white-space:nowrap}
+.uc .uw{color:var(--muted);font-size:11px;grid-column:2/4;min-width:0}
+.uc .bars{grid-column:1/4;display:flex;flex-direction:column;gap:2px}
+.uc .b{height:4px;background:#15170f}
+.uc .b i{display:block;height:100%}
+.uc .hp i{background:var(--olive)} .uc .su i{background:var(--accent)}
+
+/* 결과 */
+.res h1{font-size:40px}
+.res.win h1{color:var(--olive)} .res.lose h1{color:var(--danger)}
+.rep{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.rp{background:var(--panel);border:1px solid var(--line);padding:10px 12px}
+.rp.dead{border-color:var(--danger)}
+.rp h3{font-size:17px}
+.rp .g{color:var(--olive);font-size:13px}
+.rp .s{font-size:12.5px;color:var(--muted)}
+.rp .pr{color:var(--accent);font-weight:700}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#000;border:1px solid var(--accent);color:var(--ink);padding:7px 14px;font-size:13px;z-index:20;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="hq"></div>
+<div class="wrap" id="battle" hidden>
+  <div class="bar-top">
+    <h2 id="b-title"></h2>
+    <div class="obj" id="b-obj"></div>
+    <button class="btn" id="b-pause">일시정지<kbd>Space</kbd></button>
+    <button class="btn" id="b-speed">속도 ×1</button>
+    <button class="btn" id="b-mute">소리 켬</button>
+    <button class="btn warn" id="b-retreat">철수</button>
+  </div>
+  <div class="stage">
+    <canvas id="cv"></canvas>
+    <div id="log"></div>
+    <div id="banner" hidden></div>
+    <div id="lootmenu" hidden></div>
+    <div class="ovl" id="brief"></div>
+  </div>
+  <div class="orders" id="orders">
+    <button class="btn" data-o="walk">전진<kbd>Q</kbd></button>
+    <button class="btn" data-o="run">질주<kbd>W</kbd></button>
+    <button class="btn" data-o="sneak">포복<kbd>E</kbd></button>
+    <button class="btn" data-o="aim" title="천천히 조준해 쏩니다. 명중률이 낮으면 쏘지 않습니다.">정밀사격<kbd>Z</kbd></button>
+    <button class="btn" data-o="norm">일반사격<kbd>X</kbd></button>
+    <button class="btn" data-o="supp" title="빠르게 퍼부어 적을 엎드리게 합니다. 탄약 소모가 큽니다.">제압사격<kbd>C</kbd></button>
+    <button class="btn" data-o="reload" title="탄창이 비기 전에 미리 갈아 끼웁니다. 남은 탄은 예비탄으로 돌아갑니다.">장전<kbd>R</kbd></button>
+    <button class="btn" data-o="gren">수류탄<kbd>G</kbd></button>
+    <button class="btn" data-o="smoke" title="연막을 쳐서 30초 동안 시야를 가립니다.">연막탄<kbd>V</kbd></button>
+    <button class="btn" data-o="hold">사격 중지<kbd>F</kbd></button>
+    <button class="btn" data-o="stop">정지<kbd>S</kbd></button>
+    <button class="btn" data-o="all">전원 선택<kbd>A</kbd></button>
+    <button class="btn" data-o="flare" id="b-flare" hidden>조명탄<kbd>L</kbd></button>
+  </div>
+  <div class="squad" id="squad"></div>
+</div>
+<div class="wrap" id="debrief" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+(()=>{'use strict';
+const TS=20,MW=56,MH=34,CW=MW*TS,CH=MH*TS;
+const rnd=(a=1,b)=>b===undefined?Math.random()*a:a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ───── 데이터 ───── */
+const G=0,RD=1,TR=2,WL=3,SB=4,WA=5,PD=6,RB=7,TC=8,FL=9,RK=10,BS=11;
+const TILE=[{n:'개활지',c:0,m:1},{n:'도로',c:0,m:.9},{n:'수목',c:.35,m:1.3},{n:'벽',c:0,m:0},{n:'사낭',c:.6,m:2.2},{n:'물',c:0,m:0},
+  {n:'논',c:.1,m:1.7},{n:'잔해',c:.45,m:1.5},{n:'참호',c:.7,m:1.2},{n:'실내',c:.2,m:1},{n:'바위',c:0,m:0},{n:'덤불',c:.2,m:1.2}];
+const WPN={
+  garand:{n:'M1 개런드',range:22,rof:1.1,burst:1,acc:.5,dmg:48,clip:8,rel:2.8,sup:9,mags:10},
+  carbine:{n:'M1 카빈',range:16,rof:.8,burst:1,acc:.45,dmg:34,clip:15,rel:3,sup:7,mags:5},
+  bar:{n:'BAR 자동소총',range:22,rof:1.5,burst:4,acc:.3,dmg:46,clip:20,rel:4,sup:10,mags:7},
+  sniper:{n:'M1903 저격총',range:34,rof:2.6,burst:1,acc:.85,dmg:78,clip:5,rel:4.5,sup:12,mags:7},
+  mosin:{n:'모신나강',range:20,rof:1.9,burst:1,acc:.42,dmg:46,clip:5,rel:3.5,sup:8},
+  ppsh:{n:'PPSh-41 기관단총',range:9,rof:1.1,burst:4,acc:.22,dmg:28,clip:36,rel:4,sup:7},
+  dp:{n:'경기관총',range:24,rof:1.8,burst:6,acc:.14,dmg:44,clip:48,rel:6,sup:11},
+  tt:{n:'권총',range:7,rof:1,burst:1,acc:.3,dmg:26,clip:8,rel:3,sup:4}};
+// 총기별 발사음: [소음 중심 주파수, Q, 길이(초), 음량, 저음 타격 주파수, 저음 음량]
+const SND={garand:[1500,.8,.16,.3,150,.28],carbine:[2300,1,.09,.22,220,.12],bar:[900,.7,.14,.32,110,.35],sniper:[1700,.6,.34,.36,130,.36],
+  mosin:[1100,.7,.25,.3,120,.3],ppsh:[3000,1.4,.05,.16,300,.06],dp:[1300,.9,.11,.24,140,.22],tt:[2600,1.5,.06,.14,260,.08]};
+for(const k in SND)WPN[k].snd=SND[k];
+const ROLE={leader:{n:'분대장',w:'carbine',gren:2},rifle:{n:'소총수',w:'garand',gren:2},bar:{n:'자동소총수',w:'bar',gren:1},
+  sniper:{n:'저격수',w:'sniper',gren:1},medic:{n:'의무병',w:'carbine',gren:1,kits:3},gren:{n:'척탄병',w:'garand',gren:5}};
+const FM={aim:'정밀',norm:'일반',supp:'제압'};
+// 장비: 총기(kg), 탄창 1개 무게, 수류탄 0.6kg, 구급낭 1kg. 휴대 한도는 체력에 비례한다.
+const WT={garand:4.3,carbine:2.5,bar:8.8,sniper:4.0},CWT={garand:.25,carbine:.3,bar:.7,sniper:.15},GLIM={clips:[1,14],gren:[0,6],smoke:[0,3],kits:[0,3]};
+const GT={leader:['carbine',5,2,0],rifle:['garand',10,2,0],bar:['bar',7,1,0],sniper:['sniper',8,1,0],medic:['carbine',5,1,3],gren:['garand',10,5,0],soldier:['garand',10,2,0]};
+const gearWt=s=>{const g=s.gear;return WT[g.w]+CWT[g.w]*g.clips+g.gren*.6+(g.smoke||0)*.5+g.kits};
+const gearCap=s=>10+s.st.hp*1.5;
+function fitGear(s){const g=s.gear;while(gearWt(s)>gearCap(s)+1e-6){if(g.clips>3)g.clips--;else if(g.smoke>0)g.smoke--;else if(g.gren>0)g.gren--;else if(g.kits>0)g.kits--;else if(g.clips>1)g.clips--;else break}}
+function gearOf(s){if(!s.gear){const t=GT[s.role]||GT.rifle;s.gear={w:t[0],clips:t[1],gren:t[2],kits:t[3]};if(s.role!=='leader')s.role='soldier';fitGear(s)}if(s.gear.smoke===undefined){s.gear.smoke=1;fitGear(s)}return s.gear}
+const roleName=s=>(s.role==='leader'?'분대장':{bar:'자동소총수',sniper:'저격수'}[s.gear.w]||'소총수')+(s.gear.kits?' · 의무':'');
+const RANKS=['이병','일병','상병','병장','하사','중사','상사'],RXP=[0,60,150,280,450,700,1000];
+const rankOf=xp=>{let r=0;for(let i=0;i<RXP.length;i++)if(xp>=RXP[i])r=i;return r};
+const STN={hp:'체력',tough:'강인함',aim:'사격술',agi:'민첩성',per:'경계'};
+const SUR='김이박최정강조윤장임한오서신권황안송류홍'.split('');
+const GIV=['영수','철수','만석','덕구','봉수','상철','용팔','태식','종구','순돌','병태','춘삼','기철','동식','광수','재호','성칠','명환','인석','두만','학수','판돌','석구','복남','칠성','갑수'];
+const EK={r:{n:'소총병',w:'mosin',aim:[30,44],gren:1},s:{n:'기관단총수',w:'ppsh',aim:[30,42],gren:2},m:{n:'기관총수',w:'dp',aim:[34,44],gren:0},o:{n:'군관',w:'tt',aim:[40,50],gren:0}};
+
+const LINES={move:['네, 알겠습니다!','이동합니다!','갑니다!','알겠습니다, 이동!'],run:['뛰어!','약진 앞으로!','달립니다!'],sneak:['낮은 포복으로 갑니다.','조용히 접근합니다.'],
+  attack:['목표 확인, 사격합니다!','조준했습니다!','저놈 맡겠습니다!'],supp:['제압당하고 있습니다!','머리를 들 수가 없습니다!','사격이 너무 심합니다!'],panic:['더는 못 버팁니다!','어머니…!','살려주십시오!'],
+  low:['탄약이 모자랍니다!','마지막 탄창입니다!'],dry:['탄약이 떨어졌습니다!','총알이 없습니다!'],reload:['재장전!','탄창 교체!','장전 중!'],hit:['맞았습니다!','윽… 피격!','괜찮습니다, 스쳤습니다!'],
+  kill:['명중! 한 놈 잡았습니다!','적 사살!','쓰러뜨렸습니다!'],spot:['적 발견!','전방에 적입니다!','적이 보입니다!'],gren:['수류탄 투척!','수류탄 갑니다!'],incoming:['수류탄이다! 엎드려!','수류탄! 피해!'],
+  down:['의무병! 의무병!','전우가 쓰러졌습니다!'],medic:['버텨라, 금방 간다!','응급처치 들어갑니다!'],healed:['응급처치 끝났습니다!','살았다, 정신 차려!'],resup:['탄약 보급받았습니다!','탄창 채웠습니다!'],
+  hold:['사격 중지!','쏘지 않겠습니다.'],aim:['아껴 쏘겠습니다.','한 발씩 정확히 쏘겠습니다.'],norm:['알겠습니다.'],fsupp:['제압사격 실시합니다!','퍼붓겠습니다!'],
+  flare:['조명탄 올라갑니다!'],smoke:['연막탄 투척!','연막 칩니다!'],lootf:['전우의 총을 쓰겠습니다!','저 총 제가 가져오겠습니다!'],lootedf:['총 넘겨받았습니다!','이 총으로 계속 싸우겠습니다!'],tired:['숨이 찹니다…!','더는 못 뜁니다!'],melee:['착검! 돌격!','이야아!','받아라!','물러서지 마라!'],corner:['모퉁이에서 쏘겠습니다!','벽에 붙어 사격합니다!'],jam:['총이 걸렸습니다!','기능 고장! 처치 중!'],broken:['총이 고장났습니다!','총이 망가졌습니다!'],loot:['적 총을 줍겠습니다!','저 총 가져오겠습니다!'],looted:['적 총을 확보했습니다!','이거라도 쓰겠습니다!'],wave:['적이다! 사격 개시!','온다! 각자 위치로!','침착하게 조준해라!'],cap:['점령했습니다!','이상 없습니다, 확보!'],stop:['정지!','대기하겠습니다.']};
+/* ───── 시나리오 ───── */
+const SC=[
+{id:'nakdong',ord:19500815,crate:[28,26],title:'다부동 능선',date:'1950년 8월 · 낙동강 방어선',theme:'summer',faction:'nk',seed:11,
+ brief:'대구 북방 다부동. 분대는 능선 참호에서 도로를 내려다보고 있다. 북쪽 논을 건너 인민군 보병이 밀려온다. 물러설 곳은 없다.',
+ tips:['참호 안에서는 잘 맞지 않습니다. 함부로 나가지 마십시오.','적은 여러 파로 나뉘어 옵니다. 탄창 교체 시기를 엇갈리게 하십시오.'],
+ build(M){M.rect(PD,5,4,19,9);M.rect(PD,32,3,19,10);M.rect(RD,27,0,2,34);
+  M.scat(TR,0,0,56,21,.05);M.blob(TR,9,17,4);M.blob(TR,47,17,4);M.blob(TR,20,1,3);M.blob(TR,40,0,3);
+  M.scat(BS,0,0,56,34,.045);M.scat(RK,0,2,56,18,.012);
+  M.rect(TC,16,24,11,1);M.rect(TC,29,24,11,1);M.rect(SB,27,23,2,1);M.rect(SB,15,23,1,2);M.rect(SB,40,23,1,2);
+  M.bld(21,28,6,4,'N');M.rect(RB,30,28,4,3);M.scat(TR,0,27,56,7,.08)},
+ deploy:[[19,24],[22,24],[25,24],[30,24],[34,24],[38,24]],enemies:[],
+ phases:[{type:'hold',time:230,zone:{x:28,y:25,r:10,n:'능선 진지'},text:'능선 진지를 사수하라',
+  waves:[{t:4,from:'N',units:'rrrr'},{t:45,from:'N',span:[4,22],units:'rrrss'},{t:95,from:'N',span:[30,52],units:'rrrrm'},{t:145,from:'N',units:'sssrrr'},{t:190,from:'N',units:'rrrrss'}]}]},
+{id:'seoul',ord:19500926,crate:[3,17],title:'서울 수복',date:'1950년 9월 · 서울 시가지',theme:'urban',faction:'nk',seed:23,
+ brief:'인천 상륙 뒤 서울 시내로 진입했다. 대로를 따라 바리케이드와 건물마다 적이 버티고 있다. 거점 세 곳을 차례로 빼앗아라.',
+ tips:['대로 한가운데의 기관총은 정면으로 못 뚫습니다. 일부가 사격으로 묶어 두는 동안 나머지가 옆으로 도십시오.','건물 안의 적은 수류탄(G)으로 정리하는 편이 안전합니다.'],
+ build(M){M.rect(RD,0,15,56,4);M.rect(RD,19,0,3,34);M.rect(RD,39,0,3,34);
+  M.bld(4,4,12,8,'SE');M.bld(4,22,12,8,'NE');M.bld(24,3,13,9,'SW');M.bld(24,21,6,9,'N');M.bld(32,22,6,7,'N');
+  M.bld(44,4,10,8,'SW');M.bld(44,21,10,9,'NW');
+  M.scat(RB,0,0,56,34,.05);M.scat(RB,0,13,56,8,.06,RD);M.scat(TR,0,13,56,2,.12);M.scat(TR,0,19,56,2,.12);
+  M.rect(SB,23,15,1,4);M.rect(SB,43,15,1,4);M.rect(SB,30,13,3,1);M.rect(RB,10,16,2,2);M.rect(RB,15,15,1,2)},
+ deploy:[[1,15],[1,16],[1,17],[1,18],[2,14],[2,19]],
+ enemies:[['r',24,15],['m',24,17],['r',24,18],['r',26,7],['s',30,9],['r',34,6],['s',27,24],['r',34,24],['m',44,16],['r',44,15],['s',45,18],['o',47,17],['r',48,9],['r',48,24]],
+ phases:[{type:'capture',text:'거점 세 곳을 점령하라',zones:[{x:23,y:16.5,r:4,n:'바리케이드'},{x:30.5,y:7.5,r:6,n:'우체국'},{x:46,y:16.5,r:4.5,n:'중앙 사거리'}]}]},
+{id:'raid',ord:19501022,crate:[4,30],title:'청천강 습격',date:'1950년 10월 · 평안남도',theme:'autumn',faction:'nk',seed:37,
+ brief:'북진 중 후퇴하는 인민군 연대 지휘소를 찾아냈다. 숲을 지나 마을로 숨어들어 지휘관을 제거하고, 증원이 닿기 전에 출발 지점으로 빠져나와라.',
+ tips:['포복(E)과 사격 중지(F)를 쓰면 들키지 않고 접근할 수 있습니다.','저격수가 있다면 숲 가장자리에서 지휘소 문을 노리게 하십시오.','지휘관이 쓰러지면 동쪽에서 증원이 옵니다.'],
+ build(M){M.scat(TR,8,0,27,34,.24);M.scat(BS,0,0,56,34,.07);M.scat(TR,0,0,8,24,.1);M.scat(RK,0,0,36,34,.012);
+  M.rect(G,35,3,21,20);M.rect(RD,35,12,21,2);M.rect(PD,36,24,17,8);
+  M.bld(42,5,8,6,'S');M.bld(38,16,6,5,'N');M.bld(48,16,6,5,'N');M.rect(SB,36,11,1,1);M.rect(SB,36,14,1,1);M.rect(SB,41,11,2,1);
+  M.scat(TR,35,3,21,20,.04);M.scat(BS,35,3,21,20,.05)},
+ deploy:[[3,29],[4,30],[5,29],[3,31],[5,31],[4,28]],
+ enemies:[['o',46,8,'guard',{hvt:1}],['r',45,9],['r',44,12],['s',47,13],['m',37,11],['r',40,18],['r',50,18],
+  ['r',30,8,'patrol',{wp:[[30,8],[30,24],[22,24],[22,8]]}],['r',30,9,'patrol',{wp:[[30,9],[30,25],[22,25],[22,9]]}],
+  ['s',38,27,'patrol',{wp:[[38,27],[52,27],[52,23],[38,23]]}],['r',39,27,'patrol',{wp:[[39,27],[53,27],[53,23],[39,23]]}]],
+ phases:[{type:'kill',text:'지휘소의 군관을 제거하라'},
+  {type:'exfil',text:'전원 출발 지점으로 이탈하라',zone:{x:4.5,y:29.5,r:4.5,n:'이탈 지점'},waves:[{t:6,from:'E',span:[8,18],units:'rrrrss',hunt:1},{t:40,from:'E',span:[8,18],units:'rrss',hunt:1}]}]},
+{id:'kunuri',ord:19501126,crate:[29,18],title:'청천강의 밤',date:'1950년 11월 · 군우리 부근',theme:'snow',night:1,faction:'cn',seed:41,
+ brief:'영하 20도의 밤. 피리와 꽹과리 소리가 사방에서 들린다. 중공군이 어둠을 타고 전초 진지를 에워쌌다. 날이 밝을 때까지 버텨라.',
+ tips:['밤에는 시야가 절반 이하입니다. 조명탄(L)은 세 발뿐이니 큰 파도가 올 때 쓰십시오.','PPSh-41 기관단총은 가까이서만 위협적입니다. 다가오기 전에 쓰러뜨리십시오.'],
+ build(M){M.rect(RD,0,17,56,1);M.scat(TR,0,0,56,34,.06);M.scat(BS,0,0,56,34,.05);M.scat(RK,0,0,56,34,.012);
+  M.rect(G,20,10,17,15);M.ring(TC,22,12,13,11);M.set(22,12,SB);M.set(34,12,SB);M.set(22,22,SB);M.set(34,22,SB);
+  M.rect(RB,26,16,2,2);M.rect(RB,30,15,2,1);M.rect(SB,28,17,1,1)},
+ deploy:[[25,12],[31,12],[22,17],[34,17],[25,22],[31,22]],enemies:[],
+ phases:[{type:'hold',time:250,zone:{x:28.5,y:17.5,r:8.5,n:'전초 진지'},text:'날이 밝을 때까지 진지를 지켜라',
+  waves:[{t:6,from:'N',units:'rrrss'},{t:50,from:'E',units:'rrsss'},{t:95,from:'W',units:'ssrr'},{t:100,from:'N',units:'rr'},{t:150,from:'S',units:'rrrss'},{t:158,from:'E',units:'mr'},{t:205,from:'N',units:'sss'},{t:208,from:'W',units:'rrr'}]}]},
+{id:'whitehorse',ord:19521010,crate:[4,29],title:'백마고지',date:'1952년 10월 · 철원 395고지',theme:'barren',faction:'cn',seed:59,
+ brief:'열흘 동안 주인이 열두 번 바뀐 고지. 포격으로 나무 한 그루 남지 않았다. 전초 참호를 빼앗고 정상을 탈환한 뒤, 반드시 돌아올 역습을 막아내라.',
+ tips:['포탄 구덩이와 잔해가 유일한 엄폐물입니다. 구덩이에서 구덩이로 뛰십시오.','정상을 빼앗으면 참호를 그대로 방어에 쓰십시오.'],
+ build(M){M.scat(RB,0,0,56,34,.11);M.scat(RK,0,0,56,34,.02);M.scat(TR,0,0,56,34,.015);M.scat(BS,0,22,56,12,.04);
+  M.rect(TC,21,21,11,1);M.rect(SB,21,22,3,1);M.rect(SB,29,22,3,1);
+  M.rect(G,35,6,13,11);M.ring(TC,36,7,11,9);M.rect(SB,38,16,2,1);M.rect(SB,44,16,2,1);M.rect(SB,35,11,1,2);M.rect(RB,40,10,3,3);
+  M.rect(RB,31,17,2,2);M.rect(RB,12,26,2,2);M.rect(RB,17,23,2,2)},
+ deploy:[[3,30],[4,31],[5,30],[3,32],[6,31],[5,32]],
+ enemies:[['r',22,21],['m',26,21],['s',29,21],['r',31,21],['r',31,17],['r',33,18],['m',38,15],['m',45,15],['r',36,11],['r',41,7],['s',41,11],['s',42,12],['o',41,10],['r',46,10]],
+ phases:[{type:'capture',text:'전초 참호와 395고지 정상을 탈환하라',zones:[{x:26.5,y:21.5,r:5,n:'전초 참호'},{x:41.5,y:11.5,r:6,n:'395고지 정상'}]},
+  {type:'hold',time:110,zone:{x:41.5,y:11.5,r:6.5,n:'395고지 정상'},text:'역습을 막아내라',
+   waves:[{t:5,from:'N',span:[30,52],units:'sssrr'},{t:45,from:'E',span:[2,20],units:'rrrss'},{t:78,from:'N',span:[30,52],units:'sssrrr'}]}]}
+];
+
+
+/* ───── 추가 작전 20개 (실제 전투에 바탕) ───── */
+const dep=(x,y)=>[[x,y],[x+1,y+1],[x-1,y+1],[x+1,y-1],[x-1,y-1],[x,y+2]];
+const wild=(M,tr,bs,rk)=>{M.scat(TR,0,0,56,34,tr);M.scat(BS,0,0,56,34,bs);M.scat(RK,0,0,56,34,rk)};
+const wv=(t,from,units,span,ex)=>Object.assign({t,from,units,span},ex||{});
+SC.push(
+{id:'chuncheon',ord:19500625,crate:[28,19],title:'춘천 옥산포',date:'1950년 6월 25일 · 강원 춘천',theme:'summer',faction:'nk',seed:101,
+ brief:'전쟁 첫날. 6사단 7연대는 소양강 북쪽에서 밀려오는 인민군 2사단을 막아섰다. 춘천이 사흘을 버틴 덕에 적의 수원 포위 계획이 어그러졌다. 다리와 여울목을 건너는 적을 강 남쪽 참호에서 막아라.',
+ tips:['강은 건널 수 없습니다. 적은 다리와 얕은 여울 두 곳으로만 옵니다.','다리 위의 적은 엄폐물이 없습니다. 정밀사격으로 탄을 아끼십시오.'],
+ build(M){M.rect(RD,27,0,2,34);M.rect(WA,0,6,56,3);M.rect(RD,27,6,2,3);M.rect(PD,8,6,3,3);M.rect(PD,44,6,3,3);M.rect(PD,4,19,16,8);M.rect(PD,36,20,16,8);wild(M,.05,.05,.01);
+  M.rect(TC,18,16,9,1);M.rect(TC,30,16,9,1);M.rect(SB,27,15,2,1);M.rect(SB,17,15,1,2);M.rect(SB,39,15,1,2);M.bld(22,22,6,4,'N')},
+ deploy:[[20,16],[24,16],[27,16],[31,16],[34,16],[37,16]],enemies:[],
+ phases:[{type:'hold',time:210,zone:{x:28,y:17,r:10,n:'소양강 남안 진지'},text:'소양강 남쪽 진지를 사수하라',
+  waves:[wv(4,'N','rrrr',[24,32]),wv(45,'N','rrrss',[4,16]),wv(90,'N','rrrrm',[24,32]),wv(135,'N','ssrrr',[40,52]),wv(175,'N','rrrrss',[20,36])]}]},
+{id:'munsan',ord:19500626,crate:[28,14],hill:[10,28],title:'문산 지연전',date:'1950년 6월 26일 · 경기 파주',theme:'summer',faction:'nk',seed:103,
+ brief:'개성이 떨어지고 1사단은 임진강 남쪽 문산 일대에서 인민군 1사단과 6사단을 막았다. 28일 한강 다리가 끊기자 사단은 더 버틸 수 없었다. 마을 앞 방어선에서 시간을 번 뒤 남쪽으로 빠져나와라.',
+ tips:['버틴 뒤에는 전원이 남쪽 이탈 지점에 모여야 합니다. 쓰러진 병사는 놓고 갈 수 없으니 연막탄을 아껴 두십시오.'],
+ build(M){M.rect(RD,27,0,2,34);M.rect(PD,3,2,20,6);M.rect(PD,33,2,20,6);wild(M,.05,.05,.01);M.rect(SB,20,9,7,1);M.rect(SB,29,9,7,1);M.rect(TC,20,10,7,1);M.rect(TC,29,10,7,1);
+  M.bld(17,12,8,5,'SE');M.bld(31,12,8,5,'SW');M.bld(20,20,6,4,'N');M.rect(RB,33,20,3,2);M.rect(PD,36,24,16,8)},
+ deploy:[[21,10],[24,10],[26,10],[30,10],[33,10],[28,12]],enemies:[],
+ phases:[{type:'hold',time:130,zone:{x:28,y:11,r:9,n:'문산 방어선'},text:'방어선에서 적을 지연시켜라',waves:[wv(4,'N','rrrr'),wv(40,'N','rrrss'),wv(85,'N','rrrrms')]},
+  {type:'exfil',text:'전원 남쪽으로 철수하라',zone:{x:28,y:31,r:4.5,n:'철수 지점'},waves:[wv(3,'N','rrrss',null,{hunt:1}),wv(35,'N','rrrs',null,{hunt:1})]}]},
+{id:'hangang',ord:19500630,crate:[28,15],title:'한강 방어선',date:'1950년 6월 30일 · 서울 노량진',theme:'urban',faction:'nk',seed:107,
+ brief:'서울이 떨어진 뒤 흩어진 병력을 모은 시흥지구전투사령부는 한강 남쪽 둑에서 엿새를 버텼다. 그 시간이 유엔군 참전의 발판이 되었다. 끊어진 다리 잔해와 나루를 건너오는 적을 강둑에서 막아라.',
+ tips:['적은 무너진 다리 잔해와 양쪽 나루 세 곳으로 건너옵니다.','강둑 사낭 뒤에 붙어 있으십시오. 탄약 상자는 둑 바로 뒤에 있습니다.'],
+ build(M){M.rect(WA,0,3,56,5);M.rect(RB,27,3,2,5);M.rect(PD,9,3,3,5);M.rect(PD,44,3,3,5);M.rect(RD,0,13,56,2);M.scat(RB,0,8,56,26,.05);M.scat(TR,0,8,56,5,.05);
+  M.rect(SB,10,10,36,1);M.rect(TC,10,11,36,1);M.bld(7,17,11,7,'N');M.bld(23,18,10,6,'N');M.bld(39,17,11,7,'N')},
+ deploy:[[13,11],[20,11],[26,11],[30,11],[36,11],[43,11]],enemies:[],
+ phases:[{type:'hold',time:220,zone:{x:28,y:12,r:12,n:'노량진 강둑'},text:'한강 남쪽 둑을 사수하라',
+  waves:[wv(4,'N','rrrr',[24,32]),wv(45,'N','rrss',[6,14]),wv(50,'N','rr',[24,32]),wv(95,'N','rrrsm',[40,50]),wv(140,'N','rrrrss',[22,34]),wv(185,'N','rrrsss',[6,50])]}]},
+{id:'dongnak',ord:19500707,crate:[5,26],title:'동락리 기습',date:'1950년 7월 7일 · 충북 충주',theme:'summer',faction:'nk',seed:109,
+ brief:'동락국민학교에 인민군 15사단 48연대가 총을 걸어 놓고 쉬고 있었다. 교사 김재옥의 제보를 받은 6사단 7연대 2대대는 뒷산에서 기습해 연대를 무너뜨렸다. 개전 뒤 국군의 첫 대승이다. 숲에서 내려가 운동장과 교사를 점령하라.',
+ tips:['적은 아직 눈치채지 못했습니다. 포복과 사격 중지로 숲 가장자리까지 다가간 뒤 한꺼번에 사격을 여십시오.','운동장의 적은 엄폐물이 없습니다. 첫 일제 사격이 승부입니다.'],
+ build(M){M.scat(TR,0,0,26,34,.22);wild(M,.03,.06,.01);M.rect(G,28,8,24,18);M.rect(RD,28,26,28,2);M.bld(34,9,14,6,'S');M.rect(RB,33,18,2,2);M.rect(RB,44,19,3,2);M.rect(RB,38,22,2,2);M.rect(PD,30,29,22,5);M.scat(BS,28,8,24,18,.04)},
+ deploy:dep(5,24),
+ enemies:[['r',36,18],['r',39,17],['r',41,20],['r',43,17],['s',40,19],['r',46,21],['s',37,21],['m',33,22],['r',38,12],['r',44,12],['o',41,11,'guard',{hvt:1}],
+  ['r',30,24,'patrol',{wp:[[30,24],[50,24],[50,8],[30,8]]}],['r',31,24,'patrol',{wp:[[31,24],[51,24],[51,8],[31,8]]}]],
+ phases:[{type:'capture',text:'운동장과 교사를 점령하라',zones:[{x:40,y:19.5,r:6,n:'운동장'},{x:41,y:12,r:6,n:'동락국민학교'}]}]},
+{id:'hwaryeong',ord:19500717,crate:[16,16],hill:[14,16],title:'화령장 매복',date:'1950년 7월 17일 · 경북 상주',theme:'summer',faction:'nk',seed:113,
+ brief:'상주로 내려오던 인민군 15사단의 행군 종대가 화령장 골짜기에 들어섰다. 17연대는 능선에 숨어 기다리다 종대를 덮쳐 두 차례에 걸쳐 섬멸했다. 능선에서 도로를 내려다보며 매복하라.',
+ tips:['적은 북쪽에서 도로를 따라 내려옵니다. 사격 중지(F)로 숨어 있다가 종대가 다 들어오면 사격을 여십시오.','포복 자세로 엎드려 있으면 훨씬 늦게 들킵니다.'],
+ build(M){M.rect(RD,30,0,2,34);M.rect(PD,33,0,4,34);M.rect(PD,38,6,14,10);M.rect(PD,38,20,14,10);M.scat(TR,0,0,24,34,.2);M.scat(RK,10,0,14,34,.04);wild(M,.03,.06,.008);M.rect(RB,31,18,1,1)},
+ deploy:[[19,8],[20,12],[19,16],[20,20],[19,24],[21,14]],enemies:[],
+ phases:[{type:'elim',text:'골짜기에 들어온 적 종대를 섬멸하라',
+  waves:[wv(6,'N','rrrr',[30,31],{goal:[30,31]}),wv(22,'N','rrss',[30,31],{goal:[30,31]}),wv(60,'N','rrrm',[30,31],{goal:[30,31]}),wv(100,'N','rrrrs',[30,31],{goal:[30,31]}),wv(135,'N','rrsso',[30,31],{goal:[30,31]})]}]},
+{id:'yuhaksan',ord:19500820,crate:[28,32],title:'유학산 839고지',date:'1950년 8월 · 경북 칠곡',theme:'summer',faction:'nk',seed:127,
+ brief:'다부동을 내려다보는 유학산. 1사단 12연대는 돌투성이 비탈을 기어올라 839고지를 빼앗고 빼앗기기를 거듭했다. 이 능선이 무너지면 대구가 포병 사거리에 들어간다. 중턱 참호를 넘어 정상을 탈환하고 역습을 막아라.',
+ tips:['바위와 나무를 징검다리 삼아 올라가십시오. 기관총은 연막으로 가리고 옆으로 도십시오.'],
+ build(M){wild(M,.1,.06,.035);M.rect(TC,22,18,13,1);M.rect(SB,22,19,2,1);M.rect(SB,33,19,2,1);M.rect(RK,24,28,3,1);M.rect(RK,30,28,3,1);M.rect(RB,27,29,2,1);M.rect(G,21,4,15,9);M.ring(TC,22,5,13,7);M.rect(SB,26,12,2,1);M.rect(SB,30,12,2,1);M.rect(RK,27,8,2,2)},
+ deploy:dep(28,31),
+ enemies:[['r',23,18],['m',28,18],['s',32,18],['r',34,18],['r',18,15],['r',38,14],['m',25,11],['m',31,11],['r',22,8],['r',34,8],['s',28,6],['s',30,10],['o',29,7]],
+ phases:[{type:'capture',text:'중턱 참호와 839고지 정상을 탈환하라',zones:[{x:28.5,y:18.5,r:5.5,n:'중턱 참호'},{x:28.5,y:8.5,r:6,n:'839고지'}]},
+  {type:'hold',time:90,zone:{x:28.5,y:8.5,r:6.5,n:'839고지'},text:'역습을 막아내라',waves:[wv(5,'N','rrrss'),wv(40,'N','rrrsss')]}]},
+{id:'yeongcheon',ord:19500910,crate:[3,30],title:'영천 탈환',date:'1950년 9월 10일 · 경북 영천',theme:'urban',faction:'nk',seed:131,
+ brief:'낙동강 방어선의 마지막 고비. 인민군 15사단이 영천을 뚫고 들어오자 8사단은 반격에 나서 엿새 만에 읍내를 되찾았다. 영천을 지킨 덕에 인천 상륙이 가능했다. 남서쪽에서 들어가 읍내 거점을 되찾아라.',
+ tips:['골목과 건물 모퉁이를 쓰십시오. 벽 옆에 멈춰 서면 알아서 내밀어 쏩니다.'],
+ build(M){M.rect(RD,0,24,56,3);M.rect(RD,14,0,3,34);M.rect(RD,36,0,3,34);M.rect(RD,14,9,25,2);M.bld(2,14,10,8,'SE');M.bld(19,13,8,9,'S');M.bld(28,13,7,9,'SN');
+  M.bld(19,2,15,6,'S');M.bld(41,3,11,8,'SW');M.bld(41,14,11,8,'W');M.bld(19,28,14,5,'N');M.scat(RB,0,0,56,34,.06);M.scat(RB,0,24,56,3,.06,RD);M.rect(SB,17,23,2,1);M.rect(SB,34,23,2,1);M.rect(SB,36,12,3,1)},
+ deploy:dep(3,28),
+ enemies:[['r',18,22],['m',35,22],['s',22,17],['r',31,17],['r',24,5],['s',29,5],['r',37,13],['m',38,11],['r',45,7],['s',47,17],['o',46,6],['r',26,30],['r',44,24]],
+ phases:[{type:'capture',text:'읍내 거점 세 곳을 탈환하라',zones:[{x:26,y:23,r:5,n:'장터'},{x:26.5,y:6,r:6,n:'영천역'},{x:46,y:9,r:6.5,n:'읍사무소'}]}]},
+{id:'yangyang',ord:19501001,crate:[27,32],title:'38선 돌파',date:'1950년 10월 1일 · 강원 양양',theme:'autumn',faction:'nk',seed:137,
+ brief:'3사단 23연대가 동해안 도로를 따라 가장 먼저 38선을 넘었다. 이 날이 뒷날 국군의 날이 된다. 도로의 초소를 깨뜨리고 양양 남쪽 고지를 점령하라.',
+ tips:['도로 양쪽 숲으로 돌아 초소의 기관총을 옆에서 치십시오.'],
+ build(M){M.rect(RD,26,0,3,34);M.rect(WA,48,0,8,34);M.scat(TR,0,0,22,34,.2);M.scat(TR,31,0,16,34,.12);wild(M,.02,.06,.012);M.rect(SB,23,20,3,1);M.rect(SB,29,20,3,1);M.rect(SB,26,19,1,1);M.rect(RB,27,21,2,1);
+  M.bld(30,16,5,4,'W');M.rect(G,31,4,10,8);M.ring(TC,32,5,8,6);M.rect(SB,34,11,3,1)},
+ deploy:dep(27,29),
+ enemies:[['m',24,19],['r',30,19],['r',26,18],['s',32,18],['r',20,13],['r',36,14],['m',35,10],['r',33,7],['r',38,7],['s',36,8],['o',35,6]],
+ phases:[{type:'capture',text:'38선 초소와 양양 남쪽 고지를 점령하라',zones:[{x:27.5,y:19.5,r:5,n:'38선 초소'},{x:35.5,y:7.5,r:5.5,n:'양양 남쪽 고지'}]}]},
+{id:'pyongyang',ord:19501019,crate:[3,18],title:'평양 입성',date:'1950년 10월 19일 · 평양',theme:'urban',faction:'nk',seed:139,
+ brief:'1사단은 미 1기병사단과 앞을 다투어 평양으로 들어갔다. 대동강을 건넌 병사들은 시가지에 남은 저항 거점을 하나씩 소탕했다. 시가지를 가로질러 청사를 점령하고 남은 지휘부를 제압하라.',
+ tips:['청사 안의 지휘관은 끝까지 버팁니다. 창문으로 수류탄을 넣으십시오.'],
+ build(M){M.rect(RD,0,16,56,3);M.rect(RD,20,0,3,34);M.rect(RD,38,0,3,34);M.bld(3,4,14,9,'S');M.bld(3,22,14,9,'N');M.bld(25,5,11,8,'S');M.bld(25,22,11,8,'N');M.bld(42,2,12,11,'SW');M.bld(43,22,10,8,'N');
+  M.scat(RB,0,0,56,34,.05);M.scat(TR,0,14,56,2,.1);M.scat(TR,0,19,56,2,.1);M.rect(SB,23,15,1,5);M.rect(SB,41,14,4,1);M.rect(SB,37,15,1,2)},
+ deploy:dep(2,17),
+ enemies:[['m',24,17],['r',24,15],['r',24,19],['s',30,9],['r',28,24],['r',33,25],['m',42,13],['r',44,13],['s',39,16],['r',46,6],['r',50,9],['s',48,4],['o',49,7,'guard',{hvt:1}],['r',47,24]],
+ phases:[{type:'capture',text:'대로 방어선과 청사 앞을 점령하라',zones:[{x:24,y:17.5,r:4.5,n:'대로 방어선'},{x:43,y:14.5,r:4.5,n:'청사 앞'}]},{type:'kill',text:'청사 안의 지휘관을 제압하라'}]},
+{id:'onjong',ord:19501025,crate:[27,17],hill:[42,10],title:'온정리 조우전',date:'1950년 10월 25일 · 평북 온정리',theme:'autumn',faction:'cn',seed:149,
+ brief:'압록강을 향해 달리던 6사단 2연대가 온정리 북쪽 골짜기에서 정체 모를 대군에게 양쪽 산에서 사격을 받았다. 중공군과의 첫 교전이었다. 차량 뒤에 붙어 첫 타격을 견디고, 도로 차단선을 뚫어 남쪽으로 빠져나와라.',
+ tips:['처음에는 양쪽 산에서 한꺼번에 덮칩니다. 차량 잔해 뒤에서 버티십시오.','남쪽 도로에 차단선이 있습니다. 연막을 치고 숲으로 돌아가십시오.'],
+ build(M){M.rect(RD,26,0,3,34);M.scat(TR,0,0,20,34,.2);M.scat(TR,35,0,21,34,.2);wild(M,.03,.07,.02);M.rect(RB,26,12,2,2);M.rect(RB,27,15,2,2);M.rect(RB,26,18,1,2);M.rect(SB,24,25,2,1);M.rect(SB,29,25,2,1);M.rect(RB,26,25,3,1)},
+ deploy:[[27,13],[26,14],[28,16],[26,16],[27,18],[28,14]],
+ enemies:[['m',27,26],['r',24,26],['r',30,26],['s',22,24]],
+ phases:[{type:'hold',time:75,zone:{x:27,y:15.5,r:6,n:'차량 종대'},text:'기습을 견뎌라',waves:[wv(3,'E','rrss',[8,20]),wv(8,'W','rrss',[8,20]),wv(40,'E','rrs',[6,22]),wv(45,'W','rrs',[6,22])]},
+  {type:'exfil',text:'차단선을 뚫고 남쪽으로 이탈하라',zone:{x:27.5,y:31.5,r:4,n:'이탈 지점'},waves:[wv(5,'N','rrsss',null,{hunt:1}),wv(45,'N','rrss',null,{hunt:1})]}]},
+{id:'hungnam',ord:19501215,crate:[28,15],hill:[28,4],title:'흥남 교두보',date:'1950년 12월 · 함남 흥남',theme:'snow',faction:'cn',seed:151,
+ brief:'장진호와 동해안에서 물러난 병력과 피란민 십만이 흥남 부두로 몰려들었다. 국군 1군단은 교두보 외곽을 지키다 배에 올랐다. 외곽 참호에서 적을 막고, 명령이 떨어지면 부두로 물러나 승선하라.',
+ tips:['겨울에는 총이 자주 걸립니다. 한 사람에게 화력을 몰지 마십시오.','승선할 때는 전원이 부두에 모여야 합니다.'],
+ build(M){M.rect(WA,0,28,56,6);M.rect(RD,26,14,3,20);M.rect(RD,0,25,56,2);wild(M,.05,.05,.012);M.rect(TC,16,11,10,1);M.rect(TC,30,11,10,1);M.rect(SB,26,10,3,1);M.rect(SB,15,10,1,2);M.rect(SB,40,10,1,2);
+  M.bld(10,18,9,5,'S');M.bld(36,18,10,5,'S');M.rect(RB,30,21,3,2);M.rect(SB,23,24,3,1);M.rect(SB,29,24,3,1)},
+ deploy:[[18,11],[22,11],[25,11],[31,11],[35,11],[38,11]],enemies:[],
+ phases:[{type:'hold',time:200,zone:{x:28,y:12,r:11,n:'교두보 외곽'},text:'교두보 외곽을 사수하라',waves:[wv(5,'N','rrrss'),wv(45,'N','rrsss',[4,20]),wv(90,'N','rrrrs',[36,52]),wv(95,'W','rr',[4,10]),wv(140,'N','sssrrm'),wv(175,'N','rrrss')]},
+  {type:'exfil',text:'부두로 물러나 승선하라',zone:{x:27.5,y:30,r:4,n:'흥남 부두'},waves:[wv(4,'N','rrsss',null,{hunt:1}),wv(40,'N','rrss',null,{hunt:1})]}]},
+{id:'hoengseong',ord:19510212,crate:[27,3],hill:[10,16],title:'횡성 포위 돌파',date:'1951년 2월 12일 · 강원 횡성',theme:'snow',faction:'cn',seed:157,
+ brief:'중공군 4차 공세가 횡성 북쪽의 8사단을 덮쳤다. 밤사이 퇴로가 끊겼고 사단은 흩어져 남쪽으로 길을 뚫어야 했다. 도로 차단선을 깨뜨리고 횡성으로 빠져나와라.',
+ tips:['뒤에서도 적이 쫓아옵니다. 머뭇거리면 포위됩니다.','차단선은 기관총 두 정이 지킵니다. 연막을 치고 한쪽 숲으로 붙으십시오.'],
+ build(M){M.rect(RD,26,0,3,34);M.scat(TR,0,0,22,34,.16);M.scat(TR,32,0,24,34,.16);wild(M,.03,.06,.02);M.rect(SB,23,18,3,1);M.rect(SB,29,18,3,1);M.rect(RB,26,18,3,1);M.rect(RB,24,10,2,2);M.rect(RB,29,24,2,2);M.bld(32,26,6,4,'W');M.rect(RB,25,2,2,4);M.rect(RB,29,3,2,3);M.rect(RB,26,7,3,1)},
+ deploy:dep(27,3),
+ enemies:[['m',24,19],['m',30,19],['r',27,20],['s',22,17],['s',32,17],['r',19,21],['r',35,22],['r',27,27],['s',30,28]],
+ phases:[{type:'capture',text:'도로 차단선을 돌파하라',zones:[{x:27.5,y:18.5,r:5,n:'도로 차단선'}],waves:[wv(55,'E','rrs',[4,14],{hunt:1}),wv(100,'W','rrs',[4,14],{hunt:1}),wv(150,'N','rrss',null,{hunt:1})]},
+  {type:'exfil',text:'횡성 쪽으로 이탈하라',zone:{x:27.5,y:31.5,r:4,n:'횡성 방면'},waves:[wv(5,'N','rrsss',null,{hunt:1})]}]},
+{id:'yongmun',ord:19510519,crate:[29,19],title:'용문산 전투',date:'1951년 5월 19일 · 경기 양평',theme:'summer',faction:'cn',seed:163,
+ brief:'사창리에서 무너졌던 6사단이 용문산에서 설욕했다. 전초 2연대는 사방이 포위된 채 사주 방어로 중공군 3개 사단의 공격을 받아냈고, 사단은 반격으로 파로호까지 적을 몰아붙였다. 전초 진지를 지킨 뒤 북쪽 능선으로 반격하라.',
+ tips:['처음에는 사방에서 옵니다. 분대장을 한가운데 두면 모두가 지휘 범위에 듭니다.','버텨낸 뒤에는 북쪽 능선에 남은 적을 몰아내야 합니다.'],
+ build(M){wild(M,.09,.06,.02);M.rect(G,20,12,17,13);M.ring(TC,22,14,13,9);M.set(22,14,SB);M.set(34,14,SB);M.set(22,22,SB);M.set(34,22,SB);M.rect(RK,27,17,2,2);M.rect(TC,22,5,13,1);M.rect(SB,22,6,2,1);M.rect(SB,33,6,2,1)},
+ deploy:[[25,14],[31,14],[22,18],[34,18],[25,22],[31,22]],
+ enemies:[['m',28,5],['r',24,5],['r',32,5],['s',26,4]],
+ phases:[{type:'hold',time:190,zone:{x:28.5,y:18.5,r:8,n:'전초 진지'},text:'전초 진지를 사주 방어하라',waves:[wv(6,'E','rrrss'),wv(45,'W','rrsss'),wv(90,'S','rrrss'),wv(95,'E','rr'),wv(140,'W','sssrr'),wv(145,'S','rrm')]},
+  {type:'capture',text:'북쪽 능선으로 반격하라',zones:[{x:28.5,y:5.5,r:5.5,n:'북쪽 능선'}]}]},
+{id:'hyeonri',ord:19510517,crate:[27,3],night:1,hill:[40,17],title:'오마치 고개',date:'1951년 5월 17일 · 강원 인제',theme:'summer',faction:'cn',seed:167,
+ brief:'현리의 3군단 뒤로 중공군 한 무리가 밤새 스며들어 하나뿐인 퇴로 오마치 고개를 막았다. 군단은 고개를 뚫지 못하고 흩어졌다. 그날 밤 고개를 뚫는 데 성공한 분대가 있었다면 어땠을까. 어둠 속에서 고개의 차단 진지를 깨뜨리고 남쪽으로 빠져나와라.',
+ tips:['고개 양쪽은 바위 절벽이라 길목이 좁습니다. 조명탄으로 진지를 확인한 뒤 수류탄을 쓰십시오.','이 작전은 역사와 달리 돌파에 성공하는 가정입니다.'],
+ build(M){M.rect(RD,26,0,3,34);wild(M,.14,.07,.02);M.rect(RK,0,15,21,5);M.rect(RK,35,15,21,5);M.scat(TR,21,13,14,9,.1);M.rect(SB,22,17,4,1);M.rect(SB,29,17,4,1);M.rect(RB,26,17,3,1);M.rect(TC,22,19,11,1)},
+ deploy:dep(27,3),
+ enemies:[['m',24,18],['m',31,18],['r',27,19],['s',23,19],['s',32,19],['r',25,21],['r',30,21],['r',27,24],['o',27,22]],
+ phases:[{type:'capture',text:'고개의 차단 진지를 돌파하라',zones:[{x:27.5,y:18.5,r:5.5,n:'오마치 고개'}],waves:[wv(110,'N','rrss',null,{hunt:1}),wv(170,'N','rrss',null,{hunt:1})]},
+  {type:'exfil',text:'남쪽으로 이탈하라',zone:{x:27.5,y:31.5,r:4,n:'이탈 지점'},waves:[wv(5,'N','rrss',null,{hunt:1})]}]},
+{id:'daegwallyeong',ord:19510522,crate:[28,22],title:'대관령 사수',date:'1951년 5월 22일 · 강원 대관령',theme:'summer',faction:'cn',seed:173,
+ brief:'현리가 무너지자 중공군은 강릉을 노리고 대관령으로 달려왔다. 수도사단 1연대는 한발 먼저 고갯마루를 차지하고 사흘 동안 적을 막아냈다. 영동이 지켜졌다. 고갯마루 능선을 지켜라.',
+ tips:['숲이 짙어 적이 가까이 와서야 보입니다. 정밀사격보다 일반사격이 낫습니다.'],
+ build(M){M.rect(RD,0,24,56,2);wild(M,.16,.07,.025);M.rect(G,14,16,30,7);M.rect(TC,16,18,11,1);M.rect(TC,30,18,11,1);M.rect(SB,27,17,3,1);M.rect(SB,15,17,1,3);M.rect(SB,41,17,1,3);M.rect(RK,22,21,2,1);M.rect(RK,34,21,2,1)},
+ deploy:[[18,18],[22,18],[26,18],[31,18],[35,18],[39,18]],enemies:[],
+ phases:[{type:'hold',time:230,zone:{x:28.5,y:19,r:11,n:'대관령 고갯마루'},text:'고갯마루를 사수하라',waves:[wv(5,'N','rrrss'),wv(50,'N','rrsss',[4,22]),wv(95,'W','rrrs',[4,16]),wv(100,'N','rr',[30,50]),wv(145,'N','sssrrm'),wv(190,'N','rrrsss')]}]},
+{id:'gachil',ord:19510905,crate:[5,30],night:1,title:'가칠봉 야습',date:'1951년 9월 · 강원 양구',theme:'autumn',faction:'nk',seed:179,
+ brief:'펀치볼 북서쪽을 내려다보는 가칠봉. 5사단은 이 봉우리를 놓고 인민군과 여러 차례 뺏고 빼앗기는 싸움을 벌였다. 낮에는 오를 수 없는 비탈이다. 어둠을 타고 올라가 정상을 빼앗고 새벽 역습을 막아라.',
+ tips:['밤에는 포복으로 아주 가까이 다가갈 수 있습니다. 사격 중지를 걸고 수류탄 거리까지 붙으십시오.'],
+ build(M){wild(M,.08,.08,.04);M.rect(TC,28,20,10,1);M.rect(SB,28,21,2,1);M.rect(G,36,6,13,9);M.ring(TC,37,7,11,7);M.rect(SB,39,14,2,1);M.rect(SB,44,14,2,1);M.rect(RK,41,9,3,2)},
+ deploy:dep(5,28),
+ enemies:[['r',29,20],['m',33,20],['s',36,20],['r',26,14],['m',40,13],['r',38,10],['r',46,10],['s',42,8],['s',44,11],['o',43,10]],
+ phases:[{type:'capture',text:'전초 참호와 가칠봉 정상을 빼앗아라',zones:[{x:33,y:20.5,r:5.5,n:'전초 참호'},{x:42.5,y:10.5,r:6,n:'가칠봉'}]},
+  {type:'hold',time:90,zone:{x:42.5,y:10.5,r:6.5,n:'가칠봉'},text:'새벽 역습을 막아내라',waves:[wv(5,'N','rrrss',[32,52]),wv(45,'E','rrsss',[2,16])]}]},
+{id:'bloody',ord:19510818,crate:[3,30],title:'피의 능선',date:'1951년 8월 · 강원 양구',theme:'barren',faction:'nk',seed:181,
+ brief:'983고지와 그 옆 봉우리들. 5사단 36연대가 먼저 올라 정상을 밟았으나 역습에 도로 내주었고, 능선은 종군 기자들이 붙인 이름 그대로 피로 물들었다. 통나무 벙커가 박힌 세 봉우리를 차례로 빼앗아라.',
+ tips:['벙커의 총안은 정면만 봅니다. 옆이나 뒤로 돌아 수류탄을 넣으십시오.','포탄 구덩이마다 멈춰 숨을 돌리십시오. 지친 병사는 잘 맞히지 못합니다.'],
+ build(M){M.scat(RB,0,0,56,34,.1);M.scat(RK,0,0,56,34,.025);M.scat(TR,0,0,56,34,.02);M.bld(12,16,5,4,'N');M.rect(TC,10,21,9,1);M.bld(26,10,5,4,'N');M.rect(TC,23,15,11,1);M.bld(42,5,5,4,'N');M.ring(TC,39,3,11,8)},
+ deploy:dep(3,29),
+ enemies:[['m',14,18],['r',11,21],['s',17,21],['r',20,18],['m',28,12],['r',24,15],['r',32,15],['s',29,16],['m',44,7],['r',40,10],['r',48,9],['s',43,10],['s',46,4],['o',44,8]],
+ phases:[{type:'capture',text:'세 봉우리를 차례로 점령하라',zones:[{x:14.5,y:19,r:5,n:'773고지'},{x:28.5,y:13,r:5,n:'940고지'},{x:44.5,y:7,r:6,n:'983고지'}]}]},
+{id:'sniper',ord:19521014,crate:[27,32],title:'저격능선',date:'1952년 10월 · 강원 김화',theme:'barren',faction:'cn',seed:191,
+ brief:'오성산 남쪽의 낮은 능선. 중공군 저격수에게 병사를 잃던 곳이라 이런 이름이 붙었다. 2사단은 42일 동안 이 능선의 주인을 수십 번 바꾸며 끝내 지켜냈다. 능선의 두 봉우리를 빼앗고 오성산에서 내려오는 역습을 막아라.',
+ tips:['빼앗는 것보다 지키는 것이 더 힘듭니다. 탄약을 아껴 올라가십시오.','쓰러진 적의 PPSh-41 기관단총과 수류탄을 주워 두면 역습 때 요긴합니다.'],
+ build(M){M.scat(RB,0,0,56,34,.12);M.scat(RK,0,0,56,34,.03);M.rect(TC,14,14,10,1);M.rect(SB,14,15,2,1);M.rect(SB,22,15,2,1);M.rect(RK,18,11,2,2);M.rect(TC,32,12,11,1);M.rect(SB,32,13,2,1);M.rect(SB,41,13,2,1);M.rect(RK,36,9,3,2);M.rect(TC,22,20,12,1);M.rect(RB,22,29,12,1);M.rect(RK,25,28,2,1);M.rect(RK,31,28,2,1)},
+ deploy:dep(27,31),
+ enemies:[['r',24,20],['s',28,20],['r',32,20],['m',19,14],['r',15,14],['r',23,14],['s',17,13],['m',37,12],['r',33,12],['r',42,12],['s',39,11],['o',37,11]],
+ phases:[{type:'capture',text:'능선의 두 봉우리를 점령하라',zones:[{x:19,y:14,r:5.5,n:'A고지'},{x:37.5,y:12,r:5.5,n:'돌바위고지'}]},
+  {type:'hold',time:130,zone:{x:28,y:13,r:14,n:'저격능선'},text:'오성산에서 내려오는 역습을 막아내라',waves:[wv(5,'N','rrrsss'),wv(45,'N','ssssrr',[4,24]),wv(90,'N','rrrsssm',[30,52])]}]},
+{id:'kumsong',ord:19530714,crate:[28,14],hill:[28,6],title:'금성 돌출부',date:'1953년 7월 14일 · 강원 금성',theme:'summer',faction:'cn',seed:193,
+ brief:'휴전을 두 주 앞두고 중공군은 마지막 공세를 금성 돌출부에 쏟아부었다. 빗속에서 전선은 밀렸고, 국군은 금성천 남쪽으로 물러나 선을 다시 세웠다. 진지에서 적의 발을 묶은 뒤 금성천 여울을 건너 남쪽으로 물러나라.',
+ tips:['지금까지 가운데 가장 큰 파도입니다. 제압사격으로 접근을 늦추십시오.','강은 여울 한 곳으로만 건널 수 있습니다. 철수 전에 연막을 준비하십시오.'],
+ build(M){M.rect(WA,0,24,56,3);M.rect(PD,26,24,4,3);M.rect(RD,27,0,2,24);M.rect(RD,27,27,2,7);wild(M,.07,.06,.015);M.rect(TC,17,10,10,1);M.rect(TC,30,10,10,1);M.rect(SB,27,9,3,1);M.rect(SB,16,9,1,3);M.rect(SB,40,9,1,3);M.rect(RB,22,15,3,2);M.rect(RB,32,16,2,2);M.rect(SB,24,22,3,1);M.rect(SB,30,22,3,1)},
+ deploy:[[19,10],[23,10],[26,10],[31,10],[35,10],[38,10]],enemies:[],
+ phases:[{type:'hold',time:170,zone:{x:28.5,y:11,r:11,n:'금성 진지'},text:'진지에서 적을 지연시켜라',waves:[wv(4,'N','rrrsss'),wv(40,'N','sssrrr',[4,24]),wv(80,'N','rrrssm',[30,52]),wv(120,'N','sssrrr'),wv(125,'E','rrs',[4,12])]},
+  {type:'exfil',text:'금성천을 건너 남쪽으로 물러나라',zone:{x:28,y:31,r:4,n:'금성천 남안'},waves:[wv(3,'N','rrssss',null,{hunt:1}),wv(35,'N','rrss',null,{hunt:1})]}]},
+{id:'betty',ord:19530715,crate:[28,18],night:1,title:'베티고지',date:'1953년 7월 15일 · 경기 연천',theme:'barren',faction:'cn',seed:197,
+ brief:'임진강 변의 작은 고지. 1사단 11연대의 김만술 소위는 부임 첫날 소대원 서른다섯 명과 함께 이 고지에 올라, 밤새 몰려드는 중공군 대대를 수류탄과 총검으로 열아홉 번 밀어냈다. 휴전을 열이틀 앞둔 밤이다. 날이 밝을 때까지 고지를 지켜라.',
+ tips:['마지막 작전답게 가장 길고 거셉니다. 조명탄 세 발을 큰 파도에 맞춰 쓰십시오.','참호 안으로 뛰어든 적은 총검으로 맞서야 합니다. 분대장 곁에 모여 있으면 덜 흔들립니다.'],
+ build(M){M.scat(RB,0,0,56,34,.1);M.scat(RK,0,0,56,34,.02);M.rect(G,20,10,17,15);M.ring(TC,22,12,13,11);M.bld(26,15,5,4,'S');M.set(22,12,SB);M.set(34,12,SB);M.set(22,22,SB);M.set(34,22,SB);M.rect(SB,27,11,3,1);M.rect(SB,27,23,3,1)},
+ deploy:[[25,12],[31,12],[22,17],[34,17],[25,22],[31,22]],enemies:[],
+ phases:[{type:'hold',time:290,zone:{x:28.5,y:17.5,r:8.5,n:'베티고지'},text:'날이 밝을 때까지 고지를 지켜라',
+  waves:[wv(6,'N','rrrss'),wv(40,'E','rrsss'),wv(75,'W','ssrr'),wv(80,'N','rrs'),wv(120,'N','sssrr'),wv(125,'S','rrs'),wv(165,'E','rrsss'),wv(170,'W','rrm'),wv(210,'N','ssssrr'),wv(215,'S','rrs'),wv(250,'E','ssr'),wv(252,'W','ssr')]}]}
+);
+SC.sort((a,b)=>a.ord-b.ord);
+const DIFF={chuncheon:1,munsan:2,hangang:2,dongnak:2,hwaryeong:1,nakdong:1,yuhaksan:4,yeongcheon:3,seoul:3,yangyang:2,pyongyang:3,raid:3,onjong:3,kunuri:4,hungnam:4,hoengseong:4,hyeonri:4,yongmun:3,daegwallyeong:2,bloody:5,gachil:4,whitehorse:4,sniper:5,kumsong:4,betty:5};
+SC.forEach(x=>x.diff=DIFF[x.id]||3);
+const DNAME=['','쉬움','보통','어려움','매우 어려움','극한'];
+const diffTag=sc=>`<span class="df d${sc.diff}" title="난이도 ${sc.diff}/5">${'★'.repeat(sc.diff)}${'☆'.repeat(5-sc.diff)} ${DNAME[sc.diff]}</span>`;
+
+/* ───── 캠페인 ───── */
+let C;const KEY='nameless_hill_v1';
+function mkSoldier(role,vet){const s=()=>clamp(ri(3,6)+(vet?1:0),1,10);
+  const st={hp:s(),tough:s(),aim:s(),agi:s(),per:s()},up=(k,n)=>st[k]=Math.min(10,st[k]+n);
+  if(role==='sniper')up('aim',2);if(role==='leader'){up('tough',1);up('per',1)}if(role==='bar')up('hp',1);if(role==='medic')up('agi',1);
+  const o={pts:0,id:C.nid++,name:pick(SUR)+pick(GIV),role,xp:role==='leader'?450:vet?ri(60,140):ri(0,30),st,missions:0,kills:0,out:0,dead:false,sel:false};gearOf(o);return o}
+function newCampaign(){C={roster:[],done:{},count:0,fallen:[],nid:1,pick:0,pts:0};
+  ['leader','rifle','rifle','bar','sniper','medic','gren','rifle','rifle'].forEach((r,i)=>C.roster.push(mkSoldier(r,i<4)));
+  C.roster.slice(0,6).forEach(s=>s.sel=true)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(C))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&d.roster&&d.roster.length){C=d;C.pts=C.pts||0;for(const x of C.roster){gearOf(x);x.pts=x.pts||0;if(Object.values(x.st).some(v=>v>10))for(const k in x.st)x.st[k]=clamp(Math.round(x.st[k]/10),1,10)}return}}catch(e){}newCampaign()}
+const alive=()=>C.roster.filter(s=>!s.dead);
+const ready=s=>!s.dead&&s.out===0;
+let toastT=0;function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2200)}
+
+/* ───── 본부 화면 ───── */
+let resetArm=false,hqFilter='all';const MAXMEN=12;
+function recruit(){const A=alive();if(A.length>=MAXMEN)return toast(`분대 정원은 ${MAXMEN}명입니다`);
+  const role=!A.some(x=>x.role==='leader')?'leader':!A.some(x=>x.gear.kits>0)?'medic':!A.some(x=>x.gear.w==='bar')?'bar':pick(['rifle','rifle','rifle','gren','sniper']);
+  const n=mkSoldier(role,false);C.roster.push(n);if(C.roster.filter(x=>x.sel).length<6)n.sel=true;save();toast(`신병 ${n.name}(${roleName(n)}) 전입`);renderHQ()}
+function renderHQ(){
+  $('battle').hidden=true;$('debrief').hidden=true;const el=$('hq');el.hidden=false;
+  C.roster.forEach(s=>{if(!ready(s))s.sel=false});
+  const squad=C.roster.filter(s=>s.sel);
+  const stat=(s,k)=>`<span>${STN[k]}</span><span class="pips ${s.st[k]<=3?'lo':s.st[k]>=7?'hi':''}">${Array.from({length:10},(_,i)=>`<i class="${i<s.st[k]?'f':''}"></i>`).join('')}</span><b class="${s.st[k]<=3?'lo':s.st[k]>=7?'hi':''}">${s.st[k]}</b><button class="up" data-up="${s.id}:${k}" aria-label="${STN[k]} 올리기" title="${STN[k]} +1" ${(s.pts>0||C.pts>0)&&s.st[k]<10?'':'disabled'}>+</button>`;
+  const F={all:alive(),ready:alive().filter(ready),hurt:alive().filter(x=>x.out>0)};
+  const cards=(F[hqFilter]||[]).map(s=>{const r=rankOf(s.xp),nx=RXP[r+1];
+    return`<article class="sol ${s.sel?'go':''} ${s.out?'out':''}">
+      <div class="top"><span class="rank">${RANKS[r]}</span><input class="nm" id="nm-${s.id}" data-id="${s.id}" value="${esc(s.name)}" maxlength="8" aria-label="이름 수정" title="이름을 눌러 고칠 수 있습니다"></div>
+      <div class="role">${roleName(s)} · ${WPN[s.gear.w].n} ${WPN[s.gear.w].clip*s.gear.clips}발</div>
+      <div class="gear"><label>총기 <select id="gw-${s.id}" data-gw="${s.id}">${Object.keys(WT).map(k=>`<option value="${k}" ${k===s.gear.w?'selected':''}>${WPN[k].n} ${WT[k]}kg</option>`).join('')}</select></label>
+        ${[['clips','탄창'],['gren','수류탄'],['smoke','연막탄'],['kits','구급낭']].map(([k,n])=>`<span class="stp">${n} <button data-gear="${s.id}:${k}:-1" aria-label="${n} 줄이기">−</button><b>${s.gear[k]}</b><button data-gear="${s.id}:${k}:1" aria-label="${n} 늘리기">+</button></span>`).join('')}
+        <span class="wt ${gearWt(s)/gearCap(s)>.8?'hv':''}"><span class="wbar"><i style="width:${Math.min(100,gearWt(s)/gearCap(s)*100)}%"></i></span><b>${gearWt(s).toFixed(1)} / ${gearCap(s).toFixed(1)}kg</b></span></div>
+      <div class="stats">${Object.keys(STN).map(k=>stat(s,k)).join('')}</div>
+      <div class="foot"><span>출전 ${s.missions} · 사살 ${s.kills}${nx?` · 진급까지 ${nx-s.xp}`:''}${s.pts?` · <span class="pts">능력 점수 ${s.pts}</span>`:''}</span><span class="sp"></span>
+      ${s.out?`<span class="tag w">부상 · ${s.out}작전 뒤 복귀</span>`:`<button class="btn ${s.sel?'on':''}" data-tog="${s.id}">${s.sel?'출동':'대기'}</button>`}</div>
+    </article>`}).join('');
+  const nDone=SC.filter(x=>C.done[x.id]).length;if(C.pick>=SC.length)C.pick=0;
+  const ops=SC.map((sc,i)=>{const open=true;
+    return`<button class="op ${C.pick===i?'sel':''} ${open?'':'lock'}" data-op="${i}" ${open?'':'disabled'}>
+      <div class="d">${diffTag(sc)} · ${sc.date}${C.done[sc.id]?' · <span class="ok">완수</span>':''}${open?'':' · 작전을 더 완수하면 열림'}</div>
+      <h3>${sc.title}</h3>${C.pick===i?`<p>${sc.brief}</p>`:''}</button>`}).join('');
+  const HOW={전사:'dead',실종:'mia',포로:'pow'};
+  const fallen=C.fallen.length?`<div class="roster">${C.fallen.map(f=>`<article class="sol out"><div class="top"><span class="rank">${esc(f.rank)}</span><b style="font-size:16px">${esc(f.name)}</b></div><div class="foot"><span>${esc(f.where)}</span><span class="sp"></span><span class="tag w">${esc(f.how)}</span></div></article>`).join('')}</div>`:'<p class="empty">아직 잃은 병사가 없습니다.</p>';
+  const tabs=[['all','전체',F.all.length],['ready','출동 가능',F.ready.length],['hurt','부상',F.hurt.length],['dead','사망',C.fallen.length]].map(t=>`<button class="btn ${hqFilter===t[0]?'on':''}" data-flt="${t[0]}">${t[1]} ${t[2]}</button>`).join('');
+  const body=hqFilter==='dead'?fallen:cards||`<p class="empty">${hqFilter==='hurt'?'부상 중인 병사가 없습니다.':'해당하는 병사가 없습니다.'}</p>`;
+  el.innerHTML=`<header class="mast"><h1>무명고지 분대전</h1><div class="unit">국군 보병 제○연대 3중대 2소대 1분대 · 작전 ${C.count}회 수행</div><span class="sp"></span>
+      <button class="btn warn" id="reset">${resetArm?'정말 처음부터? 한 번 더 누르면 지워집니다':'처음부터 다시'}</button></header>
+    <div class="hq"><section><div class="sec-h"><h2>병적부</h2><small>이름은 눌러서 고칠 수 있습니다. <span class="pts">분대 훈련 점수 ${C.pts}</span>${C.pts||alive().some(x=>x.pts)?' · 능력치 옆 + 를 눌러 올리십시오':''}</small></div><div class="legend"><span><i style="background:var(--danger)"></i>낮음 1~3</span><span><i style="background:var(--olive)"></i>보통 4~6</span><span><i style="background:var(--blue)"></i>우수 7~10</span></div><div class="tabs">${tabs}<span style="flex:1"></span><button class="btn primary" id="recruit" ${alive().length>=MAXMEN?'disabled':''}>신병 충원 (${alive().length}/${MAXMEN})</button></div>${hqFilter==='dead'?body:cards?`<div class="roster">${cards}</div>`:body}</section>
+    <section><div class="sec-h"><h2>작전</h2><small>아무 작전이나 골라 수행할 수 있습니다 · ${nDone}/${SC.length} 완수 · 출동 ${squad.length}/6명</small></div><div class="ops">${ops}</div>
+      <div class="go-row"><button class="btn primary" id="go" ${squad.length?'':'disabled'}>작전 개시 · ${SC[C.pick].title}</button></div>
+      <div class="help" style="margin-top:12px"><b>조작</b> — 왼쪽 클릭·끌기: 병사 선택 · 오른쪽 클릭: 이동, 적을 누르면 공격 · 숫자키 1–6: 병사 선택 · Space: 일시정지(정지 중에도 명령 가능)<br>
+      <b>이동 방식</b> — 전진(Q) 보통 · 질주(W) 빠르지만 눈에 띔 · 포복(E) 느리지만 잘 안 맞고, 적이 알아채는 거리가 평소의 절반 이하로 줄어듦. 병사는 멈춰 있을 때만 사격합니다.<br>
+      <b>탄약과 사격 방식</b> — 병사마다 휴대 탄약이 정해져 있고, 다 쓰면 쏘지 못합니다. 정밀사격(Z)은 천천히 조준해 잘 맞고 명중률 20% 미만이면 쏘지 않아 탄을 아낍니다. 일반사격(X)은 기본값입니다. 제압사격(C)은 두 배 가까이 빠르게 퍼부어 표적과 그 주변 적까지 엎드리게 하지만 잘 맞지 않고 탄약이 금방 바닥납니다. 탄약 상자 옆에 멈춰 서면 보급받습니다(상자당 16회).<br>
+      <b>고장과 노획</b> — 총은 가끔 걸리고(몇 초 뒤 복구), 드물게 완전히 고장납니다. 겨울에는 더 자주 걸립니다. 탄약이 떨어졌거나 총이 고장난 병사는 쓰러진 적이나 쓰러진 아군을 오른쪽 클릭해 그 총과 탄약을 주워 쓸 수 있습니다. 총과 수류탄이 함께 있으면 무엇을 가져올지 고르는 창이 뜹니다(총, 수류탄만, 모두). 장전(R)을 누르면 탄창이 비기 전에 미리 갈아 끼웁니다. 아군 총은 탄약 상자로 보급도 됩니다.<br>
+      <b>성장</b> — 능력치는 1~10입니다. 작전이 끝나면 분대 훈련 점수(성공 3, 실패 1)를 받아 아무 대원에게나 쓸 수 있고, 진급한 병사는 본인 전용 능력 점수 1점을 받습니다.<br>
+      <b>철수</b> — 작전 도중 철수하면 걸을 수 있는 병사만 돌아옵니다. 쓰러진 병사는 부상자든 전사자든 적진에 남겨져 포로로 기록되고 분대에서 빠집니다.<br>
+      <b>모퉁이</b> — 벽이나 바위 옆에 멈춰 선 병사는 알아서 모퉁이 밖으로 몸을 내밀어 살피고 쏩니다. 내민 동안에도 엄폐 60%를 받고, 쏠 상대가 없으면 벽 뒤에 숨어 보이지 않습니다. 옆으로 돌아와 몸통이 보이는 적에게는 엄폐가 통하지 않습니다. 적도 똑같이 모퉁이를 씁니다.<br>
+      <b>백병전</b> — 적과 한 칸 남짓까지 붙으면 사격 대신 총검으로 싸웁니다. 민첩성과 강인함이 높을수록, 상대가 제압당해 있을수록 유리합니다. 네 칸 안의 적을 오른쪽 클릭하면 달려들어 찌르고, 탄약이 없거나 총이 고장난 병사는 거리와 상관없이 돌격합니다. 적도 가까워지면 달려듭니다.<br>
+      <b>분대장</b> — 분대장 둘레 일곱 칸(지도의 점선 원) 안에 있는 대원은 제압을 30% 덜 받고 70% 빨리 회복합니다. 지휘를 받는 병사는 머리 옆에 노란 점이 붙습니다. 분대장이 쓰러지면 분대 전체가 크게 동요합니다.<br>
+      <b>장비</b> — 병적부에서 병사마다 총기, 탄창, 수류탄, 구급낭 수를 정합니다. 휴대 한도는 10kg + 체력×1.5kg이고, 넘게는 들 수 없습니다. 무거울수록 느려지고 빨리 지칩니다(전투 카드의 파란 막대). 지치면 느려지고 명중률이 떨어지며, 탈진하면 뛰지 못합니다. 멈춰 서면 회복합니다. 병과는 든 총에 따라 소총수·자동소총수·저격수로 정해지고, 구급낭을 든 병사는 누구든 응급처치를 할 수 있습니다.<br>
+      <b>충원</b> — 병적부의 「신병 충원」을 누르면 신병이 한 명 들어옵니다. 정원은 12명이고, 신병은 능력치가 낮습니다. 인원이 줄어도 자동으로 채워지지 않습니다.<br>
+      <b>연막탄</b> — 연막탄(V)을 던지면 2초 뒤부터 30초 동안 지름 여섯 칸의 연막이 퍼집니다. 연막은 양쪽 모두의 시야와 사선을 막습니다. 연막 속에서는 바로 옆만 보입니다. 기관총 앞을 가로지르거나 부상병을 구하러 갈 때 쓰십시오. 병사마다 기본 한 발이고 장비에서 세 발까지 늘릴 수 있습니다(개당 0.5kg).<br>
+      <b>공격 작전의 시작</b> — 공격·침투 작전에서는 분대가 포복 자세에 사격 중지 상태로 시작합니다. 들키지 않은 채로 계획을 세운 뒤 사격 중지(F)를 풀고 움직이십시오.<br>
+      <b>제압</b> — 총알이 근처를 스치면 제압 수치가 오릅니다. 제압된 병사는 엎드려 꼼짝 못 하고, 공황에 빠지면 사격도 멈춥니다. 강인함이 높을수록 잘 버팁니다.<br>
+      <b>부상</b> — 쓰러진 병사는 출혈로 죽기 전에 의무병을 선택하고 오른쪽 클릭해 응급처치하십시오. 터치 화면에서는 땅을 눌러 이동, 적을 눌러 공격합니다.</div></section></div>`;
+}
+$('hq').addEventListener('click',e=>{
+  const t=e.target.closest('[data-tog],[data-op],[data-up],[data-flt],[data-gear],#go,#reset,#recruit');if(!t)return;
+  if(t.id==='recruit')return recruit();
+  if(t.dataset.gear){const[id,k,d]=t.dataset.gear.split(':'),x=C.roster.find(q=>q.id==id),nv=x.gear[k]+(+d);if(nv<GLIM[k][0]||nv>GLIM[k][1])return;x.gear[k]=nv;
+    if(gearWt(x)>gearCap(x)+1e-6){x.gear[k]-=+d;return toast('체력이 모자라 더 들 수 없습니다. 체력을 올리면 한도가 늘어납니다.')}save();return renderHQ()}
+  if(t.dataset.flt){hqFilter=t.dataset.flt;return renderHQ()}
+  if(t.dataset.up){const[id,k]=t.dataset.up.split(':'),x=C.roster.find(q=>q.id==id);if(!x||x.st[k]>=10)return;if(x.pts>0)x.pts--;else if(C.pts>0)C.pts--;else return;x.st[k]++;save();return renderHQ()}
+  if(t.id==='reset'){if(resetArm){resetArm=false;newCampaign();save()}else{resetArm=true;setTimeout(()=>{if(resetArm){resetArm=false;if(!$('hq').hidden)renderHQ()}},3500)}return renderHQ()}
+  if(t.dataset.tog){const s=C.roster.find(x=>x.id==t.dataset.tog);if(!s.sel&&C.roster.filter(x=>x.sel).length>=6)return toast('한 작전에 여섯 명까지 출동할 수 있습니다');s.sel=!s.sel;save();return renderHQ()}
+  if(t.dataset.op){C.pick=+t.dataset.op;save();return renderHQ()}
+  if(t.id==='go')startBattle(SC[C.pick]);
+});
+$('hq').addEventListener('change',e=>{if(e.target.dataset.gw){const x=C.roster.find(q=>q.id==e.target.dataset.gw),old={...x.gear};x.gear.w=e.target.value;x.gear.clips=GT[{bar:'bar',sniper:'sniper',carbine:'leader'}[x.gear.w]||'rifle'][1];fitGear(x);
+    if(gearWt(x)>gearCap(x)+1e-6){x.gear=old;toast('체력이 모자라 이 총을 들 수 없습니다.')}save();return renderHQ()}
+  if(e.target.classList.contains('nm')){const s=C.roster.find(x=>x.id==e.target.dataset.id);const v=e.target.value.trim();if(v)s.name=v;else e.target.value=s.name;save()}});
+
+/* ───── 소리 ───── */
+let AC=null,NB=null,muted=false,lastShot=0;
+function initAudio(){try{if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();NB=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=NB.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}if(AC.state==='suspended')AC.resume()}catch(e){AC=null}}
+function sfx(kind,vol=1){if(!AC||muted)return;try{const now=AC.currentTime;if(kind==='shot'){if(now-lastShot<.035)return;lastShot=now}
+  const src=AC.createBufferSource();src.buffer=NB;const f=AC.createBiquadFilter(),g=AC.createGain();
+  const P={shot:[.09,1800,.22,'bandpass'],boom:[.7,220,.6,'lowpass'],flare:[.5,3000,.12,'highpass'],stab:[.1,420,.3,'lowpass']}[kind];
+  f.type=P[3];f.frequency.value=P[1]*(.8+Math.random()*.4);g.gain.setValueAtTime(P[2]*vol,now);g.gain.exponentialRampToValueAtTime(.001,now+P[0]);
+  src.connect(f);f.connect(g);g.connect(AC.destination);src.start(now,Math.random()*.5,P[0]+.05)}catch(e){}}
+
+function gun(w,vol){if(!AC||muted)return;try{const now=AC.currentTime;if(now-lastShot<.02)return;lastShot=now;const[f,q,d,g,tf,tg]=w.snd;
+  const src=AC.createBufferSource();src.buffer=NB;const bp=AC.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f*(.93+Math.random()*.14);bp.Q.value=q;
+  const gn=AC.createGain();gn.gain.setValueAtTime(g*vol,now);gn.gain.exponentialRampToValueAtTime(.001,now+d);src.connect(bp);bp.connect(gn);gn.connect(AC.destination);src.start(now,Math.random()*.5,d+.05);
+  const o=AC.createOscillator(),og=AC.createGain();o.frequency.setValueAtTime(tf,now);o.frequency.exponentialRampToValueAtTime(tf*.35,now+d*.8);
+  og.gain.setValueAtTime(tg*vol,now);og.gain.exponentialRampToValueAtTime(.001,now+d*.8);o.connect(og);og.connect(AC.destination);o.start(now);o.stop(now+d)}catch(e){}}
+// M1 개런드의 빈 클립이 튀어나오는 소리
+function ping(){if(!AC||muted)return;try{const now=AC.currentTime+.06;for(const f of[2350,3900]){const o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.value=f;
+  g.gain.setValueAtTime(.07,now);g.gain.exponentialRampToValueAtTime(.001,now+.3);o.connect(g);g.connect(AC.destination);o.start(now);o.stop(now+.32)}}catch(e){}}
+/* ───── 전투 상태 ───── */
+let B=null;const cv=$('cv'),ctx=cv.getContext('2d');let DPR=1,bg=null,fogC=null,fogCtx=null;
+const OFFS=[];for(let y=-6;y<=6;y++)for(let x=-6;x<=6;x++)OFFS.push([x,y,Math.hypot(x,y)]);OFFS.sort((a,b)=>a[2]-b[2]);
+const tileOf=(x,y)=>B.map[(y|0)*MW+(x|0)];
+const tileAt=u=>B.map[(u.y|0)*MW+(u.x|0)];
+const passable=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&TILE[B.map[y*MW+x]].m>0;
+function nearFree(tx,ty,taken){for(const o of OFFS){const x=tx+o[0],y=ty+o[1];if(passable(x,y)&&!(taken&&taken.has(y*MW+x)))return{x,y}}return null}
+function mkMap(sc){const m=new Uint8Array(MW*MH),r=mulberry(sc.seed);
+  const M={set(x,y,t){if(x>=0&&y>=0&&x<MW&&y<MH)m[y*MW+x]=t},
+   rect(t,x,y,w,h){for(let j=0;j<h;j++)for(let i=0;i<w;i++)this.set(x+i,y+j,t)},
+   scat(t,x,y,w,h,p,only=G){for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)if(i>=0&&j>=0&&i<MW&&j<MH&&m[j*MW+i]===only&&r()<p)m[j*MW+i]=t},
+   blob(t,cx,cy,rad){for(let j=cy-rad;j<=cy+rad;j++)for(let i=cx-rad;i<=cx+rad;i++)if(i>=0&&j>=0&&i<MW&&j<MH&&m[j*MW+i]===G&&Math.hypot(i-cx,j-cy)<rad*(.6+r()*.4))m[j*MW+i]=t},
+   ring(t,x,y,w,h){for(let i=0;i<w;i++){this.set(x+i,y,t);this.set(x+i,y+h-1,t)}for(let j=0;j<h;j++){this.set(x,y+j,t);this.set(x+w-1,y+j,t)}},
+   bld(x,y,w,h,doors){this.ring(WL,x,y,w,h);this.rect(FL,x+1,y+1,w-2,h-2);
+    for(let i=1;i<w-1;i++){if(r()<.3)this.set(x+i,y,SB);if(r()<.3)this.set(x+i,y+h-1,SB)}
+    for(let j=1;j<h-1;j++){if(r()<.3)this.set(x,y+j,SB);if(r()<.3)this.set(x+w-1,y+j,SB)}
+    const mx=x+(w>>1),my=y+(h>>1);for(const d of doors){if(d==='N'){this.set(mx,y,FL);this.set(mx-1,y,FL)}if(d==='S'){this.set(mx,y+h-1,FL);this.set(mx-1,y+h-1,FL)}if(d==='W'){this.set(x,my,FL)}if(d==='E'){this.set(x+w-1,my,FL)}}}};
+  sc.build(M);return m}
+
+function findPath(sx,sy,tx,ty){sx|=0;sy|=0;tx|=0;ty|=0;
+  if(!passable(tx,ty)){const n=nearFree(tx,ty);if(!n)return[];tx=n.x;ty=n.y}
+  if(sx===tx&&sy===ty)return[];
+  const N=MW*MH,g=new Float32Array(N).fill(1e9),from=new Int32Array(N).fill(-1),cl=new Uint8Array(N),f=new Float32Array(N);
+  const s=sy*MW+sx,goal=ty*MW+tx;g[s]=0;f[s]=0;const open=[s];let found=false,it=0;
+  while(open.length&&it++<20000){let bi=0;for(let i=1;i<open.length;i++)if(f[open[i]]<f[open[bi]])bi=i;
+    const c=open[bi];open[bi]=open[open.length-1];open.pop();if(c===goal){found=true;break}if(cl[c])continue;cl[c]=1;
+    const cx=c%MW,cy=(c/MW)|0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=cx+dx,ny=cy+dy;if(!passable(nx,ny))continue;
+      if(dx&&dy&&(!passable(cx+dx,cy)||!passable(cx,ny)))continue;const n=ny*MW+nx;if(cl[n])continue;
+      const ng=g[c]+TILE[B.map[n]].m*(dx&&dy?1.414:1);if(ng<g[n]){g[n]=ng;from[n]=c;f[n]=ng+Math.hypot(nx-tx,ny-ty)*.9;open.push(n)}}}
+  if(!found)return[];const p=[];let c=goal;while(c!==s&&c>=0){p.push({x:c%MW+.5,y:((c/MW)|0)+.5});c=from[c]}return p.reverse()}
+
+function los(x0,y0,x1,y1){const dx=x1-x0,dy=y1-y0,n=Math.ceil(Math.hypot(dx,dy)*2);if(n<2)return true;
+  const sx=x0|0,sy=y0|0,ex=x1|0,ey=y1|0;let op=0;
+  for(let i=1;i<n;i++){const x=(x0+dx*i/n)|0,y=(y0+dy*i/n)|0;if((x===sx&&y===sy)||(x===ex&&y===ey))continue;
+    const t=B.map[y*MW+x];if(t===WL||t===RK)return false;if(t===TR){op+=.5;if(op>2)return false}else if(t===BS)op+=.12}
+  if(B.smokes.length){let sm=0;for(let i=1;i<n;i++){const px=x0+dx*i/n,py=y0+dy*i/n;for(const k of B.smokes)if(k.t>1.5&&Math.hypot(px-k.x,py-k.y)<k.r){sm++;break}if(sm>2)return false}}
+  return true}
+const sightOf=u=>(18+u.per*.12)*B.light;
+function conceal(t){let c=1;const tl=tileAt(t);if(tl===TR||tl===BS)c*=.75;
+  if(t.moving)c*=t.mode==='run'?1.25:t.mode==='sneak'?.42:1;else c*=t.mode==='sneak'?.32:t.supp>55?.6:.9;
+  if(t.revealT>0)c=Math.max(c,1.3);return c}
+// 모퉁이: 벽·바위 옆에 멈춰 선 병사는 옆 칸으로 몸을 내밀어(peeks) 보고 쏜다. 내민 동안(lean)만 그 지점으로 노출된다.
+function calcPeeks(u){const tx=u.x|0,ty=u.y|0;let blk=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=tx+dx,y=ty+dy;if(x<0||y<0||x>=MW||y>=MH)continue;const t=B.map[y*MW+x];if(t===WL||t===RK)blk=true}
+  if(!blk)return null;const P=[];for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(passable(tx+dx,ty+dy))P.push({x:tx+dx+.5,y:ty+dy+.5});return P.length?P:null}
+// 0: 사선 없음, 1: 상대 몸통이 보임, 2: 모퉁이에서 내민 부분만 보임
+function sl(a,b){if(los(a.x,a.y,b.x,b.y))return 1;const P=!a.moving&&a.peeks;if(P)for(const q of P)if(los(q.x,q.y,b.x,b.y))return 1;
+  const L=b.lean;if(L){if(los(a.x,a.y,L.x,L.y))return 2;if(P)for(const q of P)if(los(q.x,q.y,L.x,L.y))return 2}return 0}
+function leanFor(u,t){if(los(u.x,u.y,t.x,t.y)||(t.lean&&los(u.x,u.y,t.lean.x,t.lean.y)))return null;
+  for(const q of u.peeks)if(los(q.x,q.y,t.x,t.y)||(t.lean&&los(q.x,q.y,t.lean.x,t.lean.y)))return q;return null}
+const canSee=(a,b)=>{const d=dist(a,b);return d<=sightOf(a)*conceal(b)&&sl(a,b)>0};
+function hitChance(s,t){const d=dist(s,t),w=s.w;if(d>w.range)return 0;
+  let p=w.acc*(.45+s.aim/100*.9)*(1-.55*Math.pow(d/w.range,1.5));
+  if(!(t.moving&&t.mode==='run'))p*=1-(t.lean&&sl(s,t)===2?Math.max(.6,TILE[tileAt(t)].c):TILE[tileAt(t)].c);
+  if(!t.moving&&(t.mode==='sneak'||t.supp>55))p*=.65;else if(t.moving)p*=t.mode==='sneak'?.7:.9;
+  if(s.fm==='aim')p*=1.35;else if(s.fm==='supp')p*=.6;
+  if(s.fat>90)p*=.7;else if(s.fat>60)p*=.85;
+  p*=1-Math.min(s.supp,100)/130;if(d<3)p*=1.3;return clamp(p,.02,.92)}
+
+function mkUnit(side,o){const w=WPN[o.w];
+  const u=Object.assign({side,x:0,y:0,path:[],mode:'walk',moving:false,face:side==='p'?-Math.PI/2:Math.PI/2,state:'ok',supp:0,revealT:0,cd:rnd(.3,1),reloadT:0,burst:0,burstT:0,
+    target:null,forced:null,holdFire:false,acqT:rnd(.4),knownT:0,vis:side==='p',bleed:0,stab:false,healT:0,healTgt:null,gren:0,kits:0,
+    w,ammo:w.clip,st:{shots:0,hits:0,kills:0,supp:0,dmg:0,moved:0}},o);u.w=w;u.fm='norm';u.resT=0;u.resMax=side==='p'?w.clip*w.mags:Infinity;u.res=u.resMax;return u}
+const ok=u=>u.state==='ok';
+
+function startBattle(sc){
+  initAudio();
+  B={sc,map:mkMap(sc),pl:[],en:[],tracers:[],fx:[],grens:[],smokes:[],decals:[],texts:[],logs:[],t:0,phIdx:-1,ph:null,phT:0,zones:[],waveDone:new Set(),
+     crate:{x:sc.crate[0]+.5,y:sc.crate[1]+.5,n:16},rt:0,lastSay:-9,lastSpot:-99,paused:true,speed:1,sel:new Set(),over:false,started:false,night:!!sc.night,light:sc.night?.42:1,flares:sc.night?3:0,flareT:0,visT:0,hudT:0,
+     fog:new Uint8Array(MW*MH),grenMode:false,hover:null,drag:null,retreatArm:0};
+  const squad=C.roster.filter(s=>s.sel&&ready(s)).slice(0,6);
+  squad.forEach((s,i)=>{const R=gearOf(s),d=sc.deploy[i];const hp=60+s.st.hp*6;
+    const u=mkUnit('p',{w:R.w,ref:s,name:s.name,rank:RANKS[rankOf(s.xp)],role:s.role,idx:i,hp,maxhp:hp,aim:s.st.aim*10,tough:s.st.tough*10,agi:s.st.agi*10,per:s.st.per*10,gren:R.gren,kits:R.kits});u.res=u.resMax=u.w.clip*(R.clips-1);u.load=gearWt(s)/gearCap(s);u.fat=0;u.kitsMax=R.kits;u.smoke=R.smoke;
+    const f=nearFree(d[0],d[1]);u.x=f.x+.5;u.y=f.y+.5;B.pl.push(u)});
+  for(const e of sc.enemies)spawnEnemy(e[0],e[1],e[2],e[3]||'guard',e[4]||{});
+  if(sc.phases[0].type!=='hold'&&sc.phases[0].type!=='elim')B.pl.forEach(u=>{u.mode='sneak';u.holdFire=true});
+  drawBG();nextPhase();computeVis();
+  $('hq').hidden=true;$('debrief').hidden=true;$('battle').hidden=false;
+  $('b-title').textContent=sc.title;$('b-flare').hidden=!sc.night;$('banner').hidden=true;
+  $('squad').innerHTML=B.pl.map(u=>`<button class="uc" data-i="${u.idx}"><span class="num" title="숫자키 ${u.idx+1}">${u.idx+1}</span><span class="un">${esc(u.rank)} ${esc(u.name)}</span><span class="stt"></span><span class="uw"></span><span class="bars"><span class="b hp"><i></i></span><span class="b su"><i></i></span><span class="b ft"><i></i></span></span></button>`).join('');
+  $('brief').hidden=false;
+  $('brief').innerHTML=`<div class="box"><div style="color:var(--muted);letter-spacing:.1em;font-size:12px">${sc.date} · ${diffTag(sc)}</div><h2>${sc.title}</h2><p>${sc.brief}</p>
+    <p><b style="color:var(--accent)">임무</b> — ${sc.phases.map(p=>p.text).join(' → ')}</p><ul>${sc.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
+    <div><button class="btn primary" id="brief-go">전투 개시</button></div></div>`;
+  $('log').innerHTML='';updHUD(true);
+}
+function spawnEnemy(kind,x,y,mode,ex){const K=EK[kind],cn=B.sc.faction==='cn';const f=nearFree(x|0,y|0)||{x:1,y:1};
+  const u=mkUnit('e',{w:K.w,kind,name:(cn?'중공군 ':'인민군 ')+K.n,hp:70,maxhp:70,aim:ri(K.aim[0],K.aim[1]),tough:cn?ri(52,66):ri(38,56),agi:ri(40,60),per:ri(35,55),gren:Math.random()<.5?K.gren:0,
+    hvt:!!ex.hvt,ai:{mode,t:rnd(.6),halt:rnd(1,3),alert:false,wait:0,wp:ex.wp||null,wi:0,goal:ex.goal||null,hunt:!!ex.hunt,brave:kind!=='m'&&!ex.hvt&&Math.random()<.4,aggr:kind!=='m'&&!ex.hvt&&Math.random()<.5}});
+  u.x=f.x+.5;u.y=f.y+.5;B.en.push(u);return u}
+function spawnWave(w){const sp=w.span;let n=0;for(const k of w.units){let x,y;
+    if(w.from==='N'){x=sp?ri(sp[0],sp[1]):ri(4,MW-5);y=0}else if(w.from==='S'){x=sp?ri(sp[0],sp[1]):ri(4,MW-5);y=MH-1}
+    else if(w.from==='E'){x=MW-1;y=sp?ri(sp[0],sp[1]):ri(4,MH-5)}else{x=0;y=sp?ri(sp[0],sp[1]):ri(4,MH-5)}
+    const z=B.zones[0];spawnEnemy(k,x,y,'assault',{goal:w.goal?{x:w.goal[0],y:w.goal[1]}:w.hunt||!z?null:{x:z.x+rnd(-3,3),y:z.y+rnd(-3,3)},hunt:w.hunt}).ai.alert=true;n++}
+  log(`${{N:'북쪽',S:'남쪽',E:'동쪽',W:'서쪽'}[w.from]}에서 적 ${n}명 접근!`,'#ffb0a0');say(B.pl.find(u=>u.role==='leader'&&ok(u))||B.pl.find(ok),'wave',1)}
+function nextPhase(){B.phIdx++;if(B.phIdx>=B.sc.phases.length)return endBattle(true);
+  const ph=B.ph=B.sc.phases[B.phIdx];B.phT=0;B.waveDone=new Set();
+  B.zones=(ph.zones||(ph.zone?[ph.zone]:[])).map(z=>({...z,cap:false,prog:0,lost:0}));
+  if(B.phIdx>0)log('새 임무: '+ph.text,'#ffe28a')}
+function log(m,c='#fff'){B.logs.push({m,c,t:B.t});if(B.logs.length>6)B.logs.shift();
+  $('log').innerHTML=B.logs.map(l=>`<div style="color:${l.c}">${esc(l.m)}</div>`).join('')}
+function say(u,key,force){if(!u||!ok(u)||u.side!=='p')return;if(!force&&(B.rt<(u.sayUntil||0)||B.rt-B.lastSay<.7))return;u.say={s:pick(LINES[key]),t:0};u.sayUntil=B.rt+4.5;B.lastSay=B.rt}
+const nearestPl=(p,rad=99)=>{let b=null,bd=rad;for(const u of B.pl)if(ok(u)){const d=Math.hypot(u.x-p.x,u.y-p.y);if(d<bd){bd=d;b=u}}return b};
+function ftext(u,s,c){B.texts.push({x:u.x,y:u.y-.6,s,c,t:0})}
+
+/* ───── 전투 로직 ───── */
+function suppress(u,v){if(!ok(u))return;const a=v*(1-u.tough/160)*(u.led?.7:1);const was=u.supp;u.supp=Math.min(100,u.supp+a);u.st.supp+=a;
+  if(u.side==='p'){if(was<=88&&u.supp>88)say(u,'panic',1);else if(was<=55&&u.supp>55)say(u,'supp')}}
+function damage(t,d,src,expl){if(!ok(t))return;t.hp-=d;t.st.dmg+=d;suppress(t,14);
+  B.decals.push({k:'b',x:t.x+rnd(-.3,.3),y:t.y+rnd(-.3,.3),r:rnd(2,4)});
+  if(t.hp>0){if(t.side==='p'){ftext(t,'피격!','#ff8a7a');say(t,'hit')}return}
+  t.hp=0;t.path=[];t.forced=null;B.sel.delete(t);
+  if(t.side==='p'){const gun=!t.broken&&t.ammo+t.res>0;if(gun||t.gren>0||t.smoke>0)t.loot={w:gun?t.w:null,n:gun?t.ammo+t.res:0,gren:t.gren,smoke:t.smoke||0}}
+  if(t.side==='p'&&t.role==='leader'){log('분대장이 쓰러졌습니다! 분대가 동요합니다.','#ff8a7a');for(const q of B.pl)if(q!==t)suppress(q,40)}
+  if(src&&src.side!==t.side)src.st.kills++;
+  if(t.side==='e'){t.state='dead';t.loot={w:t.w,n:t.w.clip*ri(2,4),gren:t.gren||0,smoke:0};if(t.hvt)log('적 지휘관 제거!','#ffe28a');if(src&&src.side==='p'&&t.vis){ftext(t,'사살','#ffe28a');if(Math.random()<.5)say(src,'kill')}return}
+  const dc=clamp(.4-t.maxhp/380+(expl?.15:0)+(d>75?.1:0),.1,.7);
+  if(Math.random()<dc){t.state='dead';log(`${t.rank} ${t.name} 전사`,'#ff8a7a')}
+  else{t.state='down';t.bleed=70+t.maxhp*.6;log(`${t.rank} ${t.name} 중상! 의무병!`,'#ffb0a0')}
+  say(nearestPl(t),'down',1)}
+// 총검 백병전: 1.35칸 안에 적이 붙으면 사격 대신 찌른다. 민첩성과 강인함이 승패를 가른다.
+function meleeFoe(u){let b=null,bd=1.35;for(const e of(u.side==='p'?B.en:B.pl)){if(!ok(e))continue;const d=dist(u,e);if(d<bd&&los(u.x,u.y,e.x,e.y)){bd=d;b=e}}return b}
+function melee(u,t){u.revealT=1.5;u.face=Math.atan2(t.y-u.y,t.x-u.x);sfx('stab');say(u,'melee');
+  B.tracers.push({x0:u.x,y0:u.y,x1:t.x,y1:t.y,t:0,p:u.side==='p'});suppress(t,10);suppress(u,5);
+  let p=.48+(u.agi-t.agi)/200+(u.tough-t.tough)/300;if(t.supp>55)p+=.2;if(u.supp>55)p-=.15;
+  if(Math.random()<clamp(p,.15,.9)){ftext(t,'총검!','#ffffff');damage(t,rnd(55,95),u)}}
+function shoot(s,t){
+  if(s.side==='p'&&Math.random()<(B.sc.theme==='snow'?.013:.006)){s.burst=0;
+    if(Math.random()<.25){s.broken=true;s.target=null;say(s,'broken',1);log(`${s.name}: 총이 고장났습니다! 적의 총을 주워 쓰십시오.`,'#ffd66b')}else{s.jamT=rnd(3,5);say(s,'jam',1)}return}
+  s.ammo--;s.revealT=2.5;s.st.shots++;const hit=Math.random()<hitChance(s,t);
+  const o=s.lean||s,a=Math.atan2(t.y-o.y,t.x-o.x);s.face=a;
+  let ex=t.x,ey=t.y;if(!hit){const o=rnd(.5,1.6)*(Math.random()<.5?-1:1);ex+=-Math.sin(a)*o+Math.cos(a)*rnd(0,3);ey+=Math.cos(a)*o+Math.sin(a)*rnd(0,3)}
+  B.tracers.push({x0:o.x+Math.cos(a)*.3,y0:o.y+Math.sin(a)*.3,x1:ex,y1:ey,t:0,p:s.side==='p'});gun(s.w,s.side==='p'?1:.65);
+  const sp=s.fm==='supp';suppress(t,s.w.sup*(sp?1.6:1));const same=t.side==='p'?B.pl:B.en;for(const o of same)if(o!==t&&ok(o)&&dist(o,t)<(sp?2.8:1.7))suppress(o,s.w.sup*(sp?1.1:.5));
+  if(hit){s.st.hits++;damage(t,s.w.dmg*rnd(.6,1.3),s)}
+  if(s.ammo<=0){if(s.w===WPN.garand)ping();if(s.res>0){s.reloadT=s.w.rel*(1.2-s.agi/300);if(s.side==='p'){if(s.res<=s.w.clip)say(s,'low',1);else if(Math.random()<.3)say(s,'reload')}}else{say(s,'dry',1);log(`${s.name}: 탄약이 떨어졌습니다!`,'#ffd66b')}}
+  if(s.side==='p')for(const e of B.en)if(ok(e)&&dist(e,s)<18)e.ai.alert=true}
+function throwGren(u,tx,ty,smoke){if(smoke)u.smoke--;else u.gren--;u.cd=1.3;u.revealT=2;const d=Math.hypot(tx-u.x,ty-u.y),sc=d*.07;
+  B.grens.push({x0:u.x,y0:u.y,x:tx+rnd(-sc,sc),y:ty+rnd(-sc,sc),t:0,T:.45+d*.07,fuse:.7,side:u.side,src:u,smoke:!!smoke});u.face=Math.atan2(ty-u.y,tx-u.x);
+  if(u.side==='p')say(u,smoke?'smoke':'gren',1);else say(nearestPl({x:tx,y:ty},4),'incoming',1)}
+function explode(g){if(g.smoke){sfx('flare');B.smokes.push({x:g.x,y:g.y,t:0,T:30,r:3.1,sd:Math.random()*99});return}
+  sfx('boom');B.fx.push({x:g.x,y:g.y,t:0});B.decals.push({k:'c',x:g.x,y:g.y,r:rnd(9,13)});
+  for(const u of B.pl.concat(B.en)){if(!ok(u))continue;const d=Math.hypot(u.x-g.x,u.y-g.y);if(d>2.7||!los(g.x,g.y,u.x,u.y))continue;
+    const f=1-d/2.7;suppress(u,20+60*f);damage(u,105*f*(1-TILE[tileAt(u)].c*.5),g.src,true)}
+  for(const e of B.en)if(ok(e)&&Math.hypot(e.x-g.x,e.y-g.y)<20)e.ai.alert=true}
+
+function aiThink(u,dt){const a=u.ai;a.t-=dt;if(a.t>0)return;const tick=.45+rnd(.3);a.t=tick;
+  let tgt=null,bd=1e9;for(const p of B.pl){if(!ok(p))continue;const d=dist(u,p);if(d<bd&&canSee(u,p)){bd=d;tgt=p}}
+  if(tgt){tgt.knownT=6;if(!a.alert||Math.random()<.3)for(const e of B.en)if(ok(e)&&dist(e,u)<14)e.ai.alert=true;a.alert=true;a.wait=0}
+  u.target=tgt&&bd<=u.w.range?tgt:null;
+  if(u.supp>55){u.path=[];return}
+  if(tgt&&bd<8&&u.gren>0&&!tgt.moving&&Math.random()<.13&&u.cd<=0&&los(u.x,u.y,tgt.x,tgt.y)){throwGren(u,tgt.x,tgt.y);return}
+  if(a.mode==='guard'){if(tgt&&bd>u.w.range&&!u.hvt&&u.kind!=='m')a.mode='assault';
+    else if(a.alert&&!tgt&&a.aggr){a.wait+=tick;if(a.wait>9)a.mode='assault'}return}
+  if(a.mode==='patrol'){if(a.alert){a.mode='assault';u.path=[];return}
+    if(!u.path.length){const w=a.wp[a.wi];a.wi=(a.wi+1)%a.wp.length;u.mode='walk';u.path=findPath(u.x,u.y,w[0],w[1])}return}
+  // assault
+  if(tgt&&bd<3.4&&bd>1.1&&(a.brave||tgt.supp>55)){u.mode='run';u.path=findPath(u.x,u.y,tgt.x,tgt.y);return}
+  if(tgt){const pref=u.w.range*.55;if(u.path.length){if(bd<=pref*.7)u.path=[];return}
+    a.halt-=tick;if(bd>pref&&a.halt<=0){u.mode=u.supp>25?'run':'walk';u.path=findPath(u.x,u.y,tgt.x,tgt.y).slice(0,ri(3,6));a.halt=rnd(1.5,4)}return}
+  if(u.path.length)return;
+  let goal=null;let kd=1e9;for(const p of B.pl)if(ok(p)&&p.knownT>0){const d=dist(u,p);if(d<kd){kd=d;goal=p}}
+  if(!goal&&a.goal&&dist(u,a.goal)>3)goal=a.goal;
+  if(!goal){a.wait+=tick;if(a.wait>2||a.hunt){for(const p of B.pl)if(ok(p)){const d=dist(u,p);if(d<kd){kd=d;goal=p}}}}
+  if(goal){u.mode='walk';u.path=findPath(u.x,u.y,goal.x+rnd(-1.5,1.5),goal.y+rnd(-1.5,1.5)).slice(0,10)}}
+
+function updUnit(u,dt){
+  if(u.state==='down'&&!u.stab){u.bleed-=dt;if(u.bleed<=0){u.state='dead';log(`${u.rank} ${u.name} 출혈로 전사`,'#ff8a7a')}}
+  if(!ok(u))return;
+  let dec=3+u.tough*.06;if(u.side==='p'){const L=B.pl.find(p=>p.role==='leader'&&ok(p));u.led=!!(L&&L!==u&&dist(L,u)<7);if(u.led)dec*=1.7}
+  u.supp=Math.max(0,u.supp-dec*dt);u.revealT-=dt;u.knownT-=dt;u.cd-=dt;
+  const pinned=u.supp>55,panic=u.supp>88;
+  if(u.side==='e')aiThink(u,dt);
+  if(u.healTgt){const h=u.healTgt;if(h.state==='dead'||(ok(h)&&h.hp>=h.maxhp)||u.kits<=0){u.healTgt=null;u.healT=0}
+    else if(dist(u,h)<1.6){u.path=[];u.healT+=dt;if(u.healT>=3.5){u.kits--;u.healT=0;u.healTgt=null;
+      say(u,'healed',1);if(h.state==='down'){h.stab=true;log(`${u.name}: ${h.name} 응급처치 완료`,'#b8e0a0')}else{h.hp=Math.min(h.maxhp,h.hp+45);ftext(h,'치료','#b8e0a0')}}}
+    else if(!u.path.length)u.path=findPath(u.x,u.y,h.x,h.y)}
+  if(u.lootTgt){const k=u.lootTgt;if(!k.loot)u.lootTgt=null;else if(dist(u,k)<1.4){u.path=[];u.lootT+=dt;if(u.lootT>=2){const L=k.loot;u.lootTgt=null;const got=[],fr=k.side==='p',needy=u.broken||(u.ammo<=0&&u.res<=0),hasG=L.gren>0||L.smoke>0;
+      if(L.w&&L.n>0&&u.lootWhat!=='gren'){if(u.w===L.w&&!u.broken)u.res+=L.n;else{u.w=L.w;u.ammo=Math.min(L.w.clip,L.n);u.res=L.n-u.ammo;u.reloadT=0}
+        u.resMax=L.w.mags?Math.max(u.res,L.w.clip*L.w.mags):0;u.broken=false;u.jamT=0;u.burst=0;u.target=null;got.push(`${L.w.n} ${L.n}발`);L.w=null;L.n=0}
+      if(u.lootWhat!=='gun'&&L.gren>0){u.gren+=L.gren;got.push(`수류탄 ${L.gren}발`);L.gren=0}if(u.lootWhat!=='gun'&&L.smoke>0){u.smoke=(u.smoke||0)+L.smoke;got.push(`연막탄 ${L.smoke}발`);L.smoke=0}
+      if(!L.w&&!L.gren&&!L.smoke)k.loot=null;if(got.length)log(`${u.name}: ${fr?k.name+'에게서 ':''}${got.join(', ')} ${fr?'인수':'노획'}`,'#b8e0a0');say(u,fr?'lootedf':'looted',1)}}
+    else if(!u.path.length)u.path=findPath(u.x,u.y,k.x,k.y)}
+  u.moving=false;
+  if(u.path.length&&!panic){const ex=u.fat>90,md=ex&&u.mode==='run'?'walk':u.mode;let sp={walk:2,run:3.6,sneak:.9}[md]*(.8+u.agi/250)/TILE[tileAt(u)].m;if(u.load!==undefined)sp*=(1.12-.35*u.load)*(u.fat>60?.8:1);if(pinned)sp=Math.min(sp,.6);
+    if(u.load!==undefined){const was=u.fat;u.fat=Math.min(100,u.fat+{walk:1.3,run:5.5,sneak:1.8}[md]*(.5+u.load)*dt);if(was<=90&&u.fat>90)say(u,'tired',1)}
+    let left=sp*dt;while(left>0&&u.path.length){const n=u.path[0],d=Math.hypot(n.x-u.x,n.y-u.y);
+      if(d<=left){u.x=n.x;u.y=n.y;u.path.shift();left-=d}else{u.face=Math.atan2(n.y-u.y,n.x-u.x);u.x+=(n.x-u.x)/d*left;u.y+=(n.y-u.y)/d*left;left=0}}
+    u.st.moved+=sp*dt;u.moving=true}
+  if(!u.moving&&u.fat>0)u.fat=Math.max(0,u.fat-(3+u.maxhp/30)*dt);
+  if(u.moving){u.lean=null;u.pk=-1}else{const k=(u.y|0)*MW+(u.x|0);if(k!==u.pk){u.pk=k;u.peeks=calcPeeks(u)}
+    const was=u.lean;u.lean=u.peeks&&u.target&&ok(u.target)?leanFor(u,u.target):null;if(u.lean&&!was)say(u,'corner')}
+  if(u.reloadT>0){u.reloadT-=dt;if(u.reloadT<=0){const n=Math.min(u.w.clip,u.res);u.ammo=n;u.res-=n}}
+  else if(u.ammo<=0&&u.res>0)u.reloadT=u.w.rel*(1.2-u.agi/300);
+  if(u.side==='p'&&!u.moving&&u.res<u.resMax&&B.crate.n>0&&dist(u,B.crate)<1.8){u.resT+=dt;if(u.resT>=1.5){u.resT=0;u.res=Math.min(u.resMax,u.res+u.w.clip);B.crate.n--;ftext(u,'탄약 보급','#b8e0a0');say(u,'resup');if(B.crate.n<=0)log('탄약 상자가 비었습니다','#ffd66b')}}
+  if(u.side==='p'){u.acqT-=dt;if(u.acqT<=0){u.acqT=.35;
+      if(u.forced&&(!ok(u.forced)||!u.forced.vis))u.forced=null;
+      let tg=null;if(u.forced){const d=dist(u,u.forced);if(u.chase&&(d<4||u.broken||(u.ammo<=0&&u.res<=0))){if(d>1.1){u.mode='run';u.path=findPath(u.x,u.y,u.forced.x,u.forced.y)}tg=u.forced}else if(d<=u.w.range&&sl(u,u.forced)){tg=u.forced;if(u.chase)u.path=[]}else if(u.chase&&!u.path.length)u.path=findPath(u.x,u.y,u.forced.x,u.forced.y)}
+      if(!tg&&!u.holdFire&&!u.healTgt){let best=0;for(const e of B.en){if(!ok(e)||!e.vis)continue;const d=dist(u,e);if(d>u.w.range||!sl(u,e))continue;const hc=hitChance(u,e);if(u.fm==='aim'&&hc<.2&&d>=6)continue;const p=hc+(d<6?.3:0);if(p>best){best=p;tg=e}}}
+      if(tg!==u.target&&tg)u.cd=Math.max(u.cd,.9-u.per/200);u.target=tg}}
+  const foe=panic?null:meleeFoe(u);u.inMelee=!!foe;
+  if(foe){u.burst=0;u.lean=null;u.face=Math.atan2(foe.y-u.y,foe.x-u.x);u.mcd=(u.mcd===undefined?rnd(.2,.7):u.mcd)-dt;if(u.mcd<=0){u.mcd=rnd(1,1.5)*(1.15-u.agi/400);melee(u,foe)}return}
+  if(u.jamT>0){u.jamT-=dt;u.burst=0;return}if(u.broken){u.burst=0;return}
+  if(u.burst>0&&u.target&&ok(u.target)&&u.ammo>0){u.burstT-=dt;if(u.burstT<=0){u.burst--;u.burstT=.09;shoot(u,u.target)}return}
+  u.burst=0;
+  if(!u.moving&&!panic&&u.reloadT<=0&&u.healT<=0&&u.target&&ok(u.target)&&u.cd<=0&&u.ammo>0){
+    if(u.side==='e'&&!sl(u,u.target))return;
+    const fm=u.fm;u.cd=u.w.rof*(pinned?1.7:1)*rnd(.85,1.2)*(fm==='aim'?1.8:fm==='supp'?.55:1);
+    u.burst=(fm==='aim'?Math.ceil(u.w.burst/2):fm==='supp'?Math.ceil(u.w.burst*1.5):u.w.burst)-1;u.burstT=.09;shoot(u,u.target)}}
+
+function computeVis(){const P=B.pl.filter(ok);let nw=null;for(const e of B.en){const v=ok(e)&&P.some(p=>canSee(p,e));if(v&&!e.vis&&!e.seen)nw=e;e.vis=v}
+  if(nw&&B.rt-B.lastSpot>7){B.lastSpot=B.rt;say(nearestPl(nw),'spot')}
+  const f=B.fog;f.fill(0);const src=[];for(const p of P){src.push(p);if(!p.moving&&p.peeks)for(const q of p.peeks)src.push({x:q.x,y:q.y,per:p.per})}
+  for(const p of src){const r=sightOf(p),x0=Math.max(0,(p.x-r)|0),x1=Math.min(MW-1,(p.x+r)|0),y0=Math.max(0,(p.y-r)|0),y1=Math.min(MH-1,(p.y+r)|0);
+    for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const i=y*MW+x;if(f[i])continue;if(Math.hypot(x+.5-p.x,y+.5-p.y)<=r&&los(p.x,p.y,x+.5,y+.5))f[i]=1}}
+  const im=fogCtx.createImageData(MW,MH),a=B.night?150:95;for(let i=0;i<f.length;i++){im.data[i*4+2]=B.night?20:0;im.data[i*4+3]=f[i]?0:a}fogCtx.putImageData(im,0,0)}
+
+function checkPhase(dt){const ph=B.ph;B.phT+=dt;
+  (ph.waves||[]).forEach((w,i)=>{if(!B.waveDone.has(i)&&B.phT>=w.t){B.waveDone.add(i);spawnWave(w)}});
+  const P=B.pl.filter(ok),E=B.en.filter(ok);if(!P.length)return endBattle(false,'분대 전원이 쓰러졌습니다');
+  const inZ=z=>u=>Math.hypot(u.x-z.x,u.y-z.y)<=z.r;
+  if(ph.type==='hold'){const z=B.zones[0];if(E.some(inZ(z))&&!P.some(inZ(z))){z.lost+=dt;if(z.lost>12)return endBattle(false,'진지를 빼앗겼습니다')}else z.lost=Math.max(0,z.lost-dt);
+    if(B.phT>=ph.time)nextPhase()}
+  else if(ph.type==='capture'){for(const z of B.zones)if(!z.cap){if(P.some(inZ(z))&&!E.some(inZ(z))){z.prog+=dt;if(z.prog>=4){z.cap=true;log(`${z.n} 점령!`,'#b8e0a0');say(nearestPl(z),'cap',1)}}else z.prog=0}
+    if(B.zones.every(z=>z.cap))nextPhase()}
+  else if(ph.type==='kill'){if(!B.en.some(e=>e.hvt&&ok(e)))nextPhase()}
+  else if(ph.type==='exfil'){if(P.every(inZ(B.zones[0])))nextPhase()}
+  else if(ph.type==='elim'){if(B.waveDone.size>=(ph.waves||[]).length&&!E.length)nextPhase()}}
+
+function update(dt){B.t+=dt;
+  if(B.flareT>0){B.flareT-=dt;B.light=B.flareT>0?.88:.42}
+  for(const u of B.pl)updUnit(u,dt);for(const u of B.en)updUnit(u,dt);
+  for(const k of B.smokes)k.t+=dt;B.smokes=B.smokes.filter(k=>k.t<k.T);
+  for(const g of B.grens){g.t+=dt;if(g.t>=g.T+g.fuse){g.done=1;explode(g)}}B.grens=B.grens.filter(g=>!g.done);
+  for(const t of B.tracers)t.t+=dt;B.tracers=B.tracers.filter(t=>t.t<.12);
+  for(const f of B.fx)f.t+=dt;B.fx=B.fx.filter(f=>f.t<.6);
+  for(const t of B.texts)t.t+=dt;B.texts=B.texts.filter(t=>t.t<1.4);
+  B.visT-=dt;if(B.visT<=0){B.visT=.2;computeVis()}
+  checkPhase(dt)}
+
+/* ───── 결과 ───── */
+function endBattle(win,why,retreat){if(B.over)return;B.over=true;const sc=B.sc,rep=[];
+  for(const u of B.pl){const s=u.ref;let status;
+    if(retreat&&u.state!=='ok')status='pow';else if(u.state==='dead')status='dead';else if(u.state==='down')status=(win||u.stab||Math.random()<.5)?'heavy':'mia';else status=u.hp<u.maxhp*.5?'light':'ok';
+    s.missions++;s.kills+=u.st.kills;const r0=rankOf(s.xp),gains=[];
+    if(status==='dead'||status==='mia'||status==='pow'){s.dead=true;s.sel=false;C.fallen.push({name:s.name,rank:RANKS[r0],where:sc.title,how:status==='dead'?'전사':status==='pow'?'포로':'실종'})}
+    else{s.xp+=25+u.st.kills*12+(win?25:5);s.out=status==='heavy'?2:status==='light'?1:0;const up=rankOf(s.xp)-r0;if(up>0){s.pts=(s.pts||0)+up;gains.push(`진급 보상: 능력 점수 +${up}`)}}
+    rep.push({s,status,kills:u.st.kills,shots:u.st.shots,hits:u.st.hits,gains,promo:!s.dead&&rankOf(s.xp)>r0?RANKS[rankOf(s.xp)]:null,rank:RANKS[r0]})}
+  const went=new Set(B.pl.map(u=>u.ref));for(const s of C.roster)if(!went.has(s)&&!s.dead&&s.out>0)s.out--;
+  if(win)C.done[sc.id]=true;C.count++;const pool=win?3:1;C.pts=(C.pts||0)+pool;const notes=[`분대 훈련 점수 +${pool} (보유 ${C.pts}). 본부 병적부에서 원하는 대원의 능력치를 골라 올리십시오.`];
+  if(!alive().some(s=>s.role==='leader')&&alive().length){const n=alive().sort((a,b)=>b.xp-a.xp)[0];n.role='leader';notes.push(`${n.name}이(가) 분대장 직을 이어받았습니다.`)}
+  if(alive().length<6)notes.push('분대 인원이 모자랍니다. 본부에서 「신병 충원」을 눌러 보충병을 받으십시오.');
+  C.roster=C.roster.filter(s=>!s.dead);
+  if(win&&SC.indexOf(sc)===C.pick&&C.pick<SC.length-1)C.pick++;
+  save();
+  const SL={ok:'무사 귀환',light:'경상 · 1작전 휴식',heavy:'중상 · 2작전 휴식',dead:'전사',mia:'실종',pow:'포로로 잡힘'};
+  const allDone=SC.every(x=>C.done[x.id]);
+  setTimeout(()=>{$('battle').hidden=true;const el=$('debrief');el.hidden=false;B=null;
+    el.innerHTML=`<header class="mast res ${win?'win':'lose'}"><h1>${win?'작전 성공':'작전 실패'}</h1><div class="unit">${sc.title} · ${sc.date}${why?' · '+why:''}</div></header>
+    ${win&&allDone?'<p style="margin:0;color:var(--accent)">모든 작전을 완수했습니다. 1953년 7월 27일, 총성이 멎었습니다. 작전은 언제든 다시 수행할 수 있습니다.</p>':''}
+    <div class="rep">${rep.map(r=>`<div class="rp ${r.s.dead?'dead':''}"><h3>${esc(r.rank)} ${esc(r.s.name)}</h3><div class="s">${SL[r.status]} · 사살 ${r.kills} · 사격 ${r.shots}발 중 ${r.hits}발 명중</div>
+      ${r.gains.length?`<div class="g">${r.gains.join(' · ')}</div>`:''}${r.promo?`<div class="pr">${r.promo}(으)로 진급</div>`:''}</div>`).join('')}</div>
+    ${notes.length?`<div class="help">${notes.map(esc).join('<br>')}</div>`:''}
+    <div><button class="btn primary" id="back">본부로 복귀</button></div>`;
+    $('back').onclick=()=>renderHQ()},win?1200:800);
+  $('banner').hidden=false;$('banner').textContent=win?'작전 성공':'작전 실패'}
+
+/* ───── 그리기 ───── */
+const TH={
+  summer:{a:[84,116,52],b:[124,130,72],dirt:[138,116,82],rd:[152,130,94],tr:[['#274a20','#34622a','#4f8238']]},
+  urban:{a:[120,114,102],b:[100,96,88],dirt:[92,86,76],rd:[80,79,76],tr:[['#2b4a24','#3a622e','#55803e']]},
+  autumn:{a:[130,114,60],b:[152,124,66],dirt:[122,98,64],rd:[146,124,88],tr:[['#6e3d14','#9a5a1e','#c98a2e'],['#6a2a14','#96381c','#c25a2a'],['#5a5218','#857a22','#b3a63a']]},
+  snow:{a:[216,223,228],b:[188,199,210],dirt:[170,172,168],rd:[176,178,176],tr:[['#1f3326','#2c4734','#eef3f6']]},
+  barren:{a:[120,102,76],b:[94,80,60],dirt:[74,62,48],rd:[138,118,92],tr:null}};
+function mkNoise(seed){const r=mulberry(seed),P=new Float32Array(4096);for(let i=0;i<4096;i++)P[i]=r();
+  const h=(x,y)=>P[(Math.imul(x,374761393)+Math.imul(y,668265263)>>>7)&4095];
+  const n=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=h(xi,yi),b=h(xi+1,yi),c=h(xi,yi+1),d=h(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
+  n.fbm=(x,y)=>(n(x,y)*.5+n(x*2.03,y*2.03)*.25+n(x*4.1,y*4.1)*.125+n(x*8.2,y*8.2)*.0625)/.9375;return n}
+function drawBG(){DPR=Math.min(2,window.devicePixelRatio||1);cv.width=CW*DPR;cv.height=CH*DPR;
+  bg=document.createElement('canvas');bg.width=CW*DPR;bg.height=CH*DPR;const c=bg.getContext('2d');c.scale(DPR,DPR);
+  fogC=document.createElement('canvas');fogC.width=MW;fogC.height=MH;fogCtx=fogC.getContext('2d');
+  const theme=B.sc.theme,th=TH[theme],N=mkNoise(B.sc.seed*13+5),r=mulberry(B.sc.seed*7+1),snow=theme==='snow',urban=theme==='urban',barren=theme==='barren';
+  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:B.map[y*MW+x];
+  // 1) 고도: 완만한 기복 + 목표 고지
+  const lp=B.sc.phases[B.sc.phases.length-1],hz=urban?null:B.sc.hill?{x:B.sc.hill[0],y:B.sc.hill[1]}:(lp.zone||(lp.zones&&lp.zones[lp.zones.length-1])||(B.sc.phases[0].zone));
+  const Hh=new Float32Array(CW*CH);
+  for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){let h=N.fbm(x/190,y/190)*(urban?.2:1);if(hz){const dx=x-hz.x*TS,dy=y-hz.y*TS;h+=1.15*Math.exp(-(dx*dx+dy*dy)/(2*230*230))}Hh[y*CW+x]=h}
+  // 2) 지표: 타일 경계를 흩뜨려 자연스러운 윤곽으로, 음영과 등고선을 입힌다
+  const base=document.createElement('canvas');base.width=CW;base.height=CH;const bc=base.getContext('2d'),img=bc.createImageData(CW,CH),D=img.data;
+  const cls=t=>t===RD?1:t===PD?2:t===WA?3:(t===FL||t===WL)?4:0;
+  const jcls=(x,y)=>{const jx=clamp(x+(N(x/7,y/7)-.5)*9,0,CW-1),jy=clamp(y+(N(x/7+40,y/7+40)-.5)*9,0,CH-1);return cls(B.map[(jy/TS|0)*MW+(jx/TS|0)])};
+  for(let y=0;y<CH;y++)for(let x=0;x<CW;x++){const i=y*CW+x,tx=x/TS|0,ty=y/TS|0,t0=B.map[ty*MW+tx];let k;
+    if(t0===FL||t0===WL)k=4;else{k=jcls(x,y);if(k===4)k=cls(t0)}
+    const gr=.94+N(x*.83,y*.83)*.12;let R,G_,Bl;
+    if(k===0){const m=N.fbm(x/55,y/55),s=clamp((m-.36)/.3,0,1);R=th.a[0]+(th.b[0]-th.a[0])*s;G_=th.a[1]+(th.b[1]-th.a[1])*s;Bl=th.a[2]+(th.b[2]-th.a[2])*s;
+      const d=clamp((N(x/23+9,y/23+9)*.6+N(x/9+3,y/9+3)*.4-.62)/.12,0,1)*(snow?.35:.6);R+=(th.dirt[0]-R)*d;G_+=(th.dirt[1]-G_)*d;Bl+=(th.dirt[2]-Bl)*d;
+      if(t0===TR&&!barren){R*=.8;G_*=.84;Bl*=.8}}
+    else if(k===1){const up=at(tx,ty-1)===RD&&at(tx,ty+1)===RD,sd=at(tx-1,ty)===RD&&at(tx+1,ty)===RD;
+      let st=up&&!sd?N(x/3,y/55):sd&&!up?N(x/55,y/3):N(x/9,y/9);st=.88+st*.24;R=th.rd[0]*st;G_=th.rd[1]*st;Bl=th.rd[2]*st;
+      if(urban){const row=y/9|0,ox=(row%2)*6;if(y%9===0||(x+ox)%12===0){R*=.8;G_*=.8;Bl*=.8}}
+      else{const rut=up&&!sd?Math.abs((x%TS)-10):sd&&!up?Math.abs((y%TS)-10):0;if(rut>5&&rut<8){R*=.86;G_*=.86;Bl*=.86}}}
+    else if(k===2){const rr=.5+.5*Math.sin(y*1.26+N(x/34,y/34)*4);let A,Bc,f;
+      if(snow){A=[198,208,214];Bc=[168,170,150];f=rr*.4}else if(theme==='autumn'){A=[150,132,80];Bc=[112,98,58];f=rr*.6}else{A=[66,94,92];Bc=[98,142,70];f=rr*.75}
+      R=A[0]+(Bc[0]-A[0])*f;G_=A[1]+(Bc[1]-A[1])*f;Bl=A[2]+(Bc[2]-A[2])*f;
+      const wob=N(x/40+7,y/40+7)*14;
+      if((x+wob)%(TS*5)<2.6||(y+wob*.8)%(TS*4)<2.6||jcls(x-3,y)!==2||jcls(x+3,y)!==2||jcls(x,y-3)!==2||jcls(x,y+3)!==2){if(snow){R=228;G_=233;Bl=237}else{R=116;G_=98;Bl=68}}}
+    else if(k===3){R=64;G_=98;Bl=124}
+    else{R=134;G_=110;Bl=80;if(y%7===0||((x+(y/7|0)*13)%37===0)){R*=.8;G_*=.8;Bl*=.8}}
+    let sh=1;if(x>0&&y>0&&x<CW-1&&y<CH-1){sh=clamp(1+(Hh[i-CW-1]-Hh[i+CW+1])*26,.68,1.32);
+      if(k!==4&&!urban&&(Math.floor(Hh[i]*13)!==Math.floor(Hh[i+1]*13)||Math.floor(Hh[i]*13)!==Math.floor(Hh[i+CW]*13)))sh*=.86}
+    sh*=gr;D[i*4]=R*sh;D[i*4+1]=G_*sh;D[i*4+2]=Bl*sh;D[i*4+3]=255}
+  bc.putImageData(img,0,0);c.imageSmoothingEnabled=true;c.drawImage(base,0,0);
+  // 3) 잔풀·균열 같은 잔무늬
+  c.lineWidth=1;
+  if(urban){for(let i=0;i<150;i++){let x=r()*CW,y=r()*CH;const t=at(x/TS|0,y/TS|0);if(t!==G&&t!==RD)continue;c.strokeStyle='rgba(0,0,0,.2)';c.beginPath();c.moveTo(x,y);for(let k=0;k<4;k++){x+=r()*10-5;y+=r()*10-5;c.lineTo(x,y)}c.stroke()}}
+  else for(let i=0,n=snow?900:barren?2500:6000;i<n;i++){const x=r()*CW,y=r()*CH,t=at(x/TS|0,y/TS|0);if(t!==G&&t!==BS&&t!==TR)continue;
+    c.strokeStyle=snow?'rgba(90,96,80,.35)':r()<.55?'rgba(18,28,8,.25)':'rgba(230,226,150,.16)';c.beginPath();c.moveTo(x,y);c.lineTo(x+r()*2-1,y-2-r()*2.5);c.stroke()}
+  // 4) 참호: 파낸 흙(흉벽)과 어두운 호 바닥
+  const tcs=[];for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(at(x,y)===TC)tcs.push([x,y]);
+  c.lineCap='round';c.lineJoin='round';
+  for(const [col,lw] of [[snow?'#cfcabd':'#a08a64',19],[snow?'#b9b2a2':'#8a7450',15],['#3b2d1f',9.5],['#231a11',5]]){c.strokeStyle=col;c.lineWidth=lw;
+    for(const [x,y] of tcs){const px=x*TS+10,py=y*TS+10;c.beginPath();c.moveTo(px,py);c.lineTo(px+.01,py);if(at(x+1,y)===TC){c.moveTo(px,py);c.lineTo(px+TS,py)}if(at(x,y+1)===TC){c.moveTo(px,py);c.lineTo(px,py+TS)}c.stroke()}}
+  for(const [x,y] of tcs)for(let k=0;k<7;k++){const a=r()*6.28,d=7+r()*3;c.fillStyle=r()<.5?'rgba(40,30,18,.45)':'rgba(210,190,150,.4)';c.fillRect(x*TS+10+Math.cos(a)*d,y*TS+10+Math.sin(a)*d,1.5+r(),1.5+r())}
+  // 5) 그림자를 먼저, 구조물을 나중에
+  c.fillStyle='rgba(0,0,0,.3)';for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=at(x,y);if(t===WL)c.fillRect(x*TS+5,y*TS+5,TS,TS);else if(t===SB)c.fillRect(x*TS+3,y*TS+3,TS,TS)}
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const t=at(x,y),px=x*TS,py=y*TS,cx=px+10,cy=py+10;
+    if(t===WL){c.fillStyle=snow?'#7d766c':'#6c6256';c.fillRect(px,py,TS,TS);
+      for(let k=0;k<5;k++){c.fillStyle=r()<.5?'rgba(0,0,0,.14)':'rgba(255,255,255,.09)';c.fillRect(px+r()*15,py+r()*15,3+r()*4,2+r()*2)}
+      if(snow){c.fillStyle='rgba(240,245,248,.6)';c.fillRect(px,py,TS,TS)}
+      c.fillStyle='rgba(255,255,255,.22)';if(at(x,y-1)!==WL)c.fillRect(px,py,TS,2);if(at(x-1,y)!==WL)c.fillRect(px,py,2,TS);
+      c.fillStyle='rgba(0,0,0,.5)';if(at(x,y+1)!==WL)c.fillRect(px,py+TS-2,TS,2);if(at(x+1,y)!==WL)c.fillRect(px+TS-2,py,2,TS)}
+    else if(t===SB){for(let row=0;row<2;row++)for(let k=-1;k<2;k++){const bx=px+k*10+(row?5:0),by=py+1+row*9.5;if(bx<px-4||bx>px+13)continue;const w=Math.min(9.5,px+TS-bx-.5),x0=Math.max(bx,px+.5);
+        c.fillStyle=['#b7a171','#a8925f','#c2ad7e'][(r()*3)|0];c.beginPath();c.roundRect(x0,by,w-(x0-bx),8.5,3);c.fill();c.strokeStyle='rgba(50,38,16,.65)';c.lineWidth=1;c.stroke();
+        c.strokeStyle='rgba(255,255,255,.25)';c.beginPath();c.moveTo(x0+2,by+2);c.lineTo(x0+w-(x0-bx)-2,by+2);c.stroke()}
+      if(snow){c.fillStyle='rgba(240,245,248,.45)';c.fillRect(px+1,py+1,TS-2,6)}}
+    else if(t===RB){if(barren){const R0=9+r()*3,g=c.createRadialGradient(cx,cy,1,cx,cy,R0+3);g.addColorStop(0,'#211a12');g.addColorStop(.55,'#4a3b2a');g.addColorStop(.8,'#a8926c');g.addColorStop(1,'rgba(168,146,108,0)');c.fillStyle=g;c.beginPath();c.arc(cx,cy,R0+3,0,7);c.fill();
+        c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.arc(cx+1.5,cy+1.5,R0*.5,0,7);c.fill();for(let k=0;k<4;k++){c.fillStyle='#6c5d48';c.fillRect(cx-10+r()*20,cy-10+r()*20,2,2)}}
+      else for(let k=0;k<9;k++){const bx=px+1+r()*14,by=py+1+r()*14,w=3+r()*5,h=2+r()*4,a=r()*3;c.save();c.translate(bx+w/2,by+h/2);c.rotate(a);
+        c.fillStyle='rgba(0,0,0,.35)';c.fillRect(-w/2+1.5,-h/2+1.5,w,h);c.fillStyle=['#8e877b','#6f685e','#a59c8c','#7b4a36','#5a4632'][(r()*5)|0];c.fillRect(-w/2,-h/2,w,h);
+        c.fillStyle=snow?'rgba(240,245,248,.6)':'rgba(255,255,255,.14)';c.fillRect(-w/2,-h/2,w,1.2);c.restore()}}
+    else if(t===RK){const n=7,pts=[];const a0=r()*6;for(let k=0;k<n;k++){const a=a0+k/n*6.283,d=6+r()*3.5;pts.push([cx+Math.cos(a)*d,cy+Math.sin(a)*d*.9])}
+      const poly=(o,sc_)=>{c.beginPath();pts.forEach((p_,k)=>{const X=cx+(p_[0]-cx)*sc_+o,Y=cy+(p_[1]-cy)*sc_+o;k?c.lineTo(X,Y):c.moveTo(X,Y)});c.closePath()};
+      c.fillStyle='rgba(0,0,0,.32)';poly(3.5,1);c.fill();c.fillStyle=snow?'#8d9196':'#7e7d74';poly(0,1);c.fill();c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=1;c.stroke();
+      c.fillStyle=snow?'#eef2f5':'#a9a89c';poly(-1.8,.55);c.fill()}
+    else if(t===BS){const tc=th.tr?th.tr[(r()*th.tr.length)|0]:['#4a4030','#5e5240','#7a6c54'];for(let k=0;k<6;k++){const bx=cx+(r()-.5)*13,by=cy+(r()-.5)*13,rr=2.8+r()*2.4;
+        c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.arc(bx+1.5,by+2,rr,0,7);c.fill();c.fillStyle=tc[0];c.beginPath();c.arc(bx,by,rr,0,7);c.fill();c.fillStyle=tc[1];c.beginPath();c.arc(bx-.8,by-.8,rr*.65,0,7);c.fill();
+        if(snow){c.fillStyle='rgba(240,245,248,.8)';c.beginPath();c.arc(bx-1,by-1,rr*.45,0,7);c.fill()}}}}
+  // 6) 나무: 남동쪽 그림자, 겹겹이 쌓인 수관
+  const trees=[];for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(at(x,y)===TR)trees.push([x*TS+10+(r()-.5)*7,y*TS+10+(r()-.5)*7,9+r()*4.5]);
+  trees.sort((a,b)=>a[1]-b[1]);
+  for(const [x,y,R0] of trees){c.fillStyle='rgba(0,0,0,.26)';c.beginPath();c.ellipse(x+5,y+6,R0,R0*.8,.6,0,7);c.fill()}
+  for(const [x,y,R0] of trees){
+    if(barren){c.strokeStyle='#33291e';c.lineCap='round';for(let k=0;k<5;k++){const a=r()*6.28,l=4+r()*6;c.lineWidth=1.4;c.beginPath();c.moveTo(x,y);c.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);c.stroke();
+        c.lineWidth=.8;c.beginPath();c.moveTo(x+Math.cos(a)*l*.6,y+Math.sin(a)*l*.6);c.lineTo(x+Math.cos(a+.7)*l,y+Math.sin(a+.7)*l);c.stroke()}
+      c.fillStyle='#4a3a28';c.beginPath();c.arc(x,y,2.6,0,7);c.fill();c.fillStyle='#1c150e';c.beginPath();c.arc(x,y,1.2,0,7);c.fill();continue}
+    const tc=th.tr[(r()*th.tr.length)|0];
+    for(let k=0;k<7;k++){const a=r()*6.28,d=r()*R0*.5;c.fillStyle=tc[0];c.beginPath();c.arc(x+Math.cos(a)*d,y+Math.sin(a)*d,R0*.55,0,7);c.fill()}
+    for(let k=0;k<6;k++){const a=r()*6.28,d=r()*R0*.45;c.fillStyle=tc[1];c.beginPath();c.arc(x-R0*.14+Math.cos(a)*d,y-R0*.14+Math.sin(a)*d,R0*.36,0,7);c.fill()}
+    for(let k=0;k<4;k++){const a=r()*6.28,d=r()*R0*.4;c.fillStyle=tc[2];c.globalAlpha=snow?.95:.8;c.beginPath();c.arc(x-R0*.28+Math.cos(a)*d,y-R0*.28+Math.sin(a)*d,R0*(snow?.3:.2),0,7);c.fill();c.globalAlpha=1}}}
+
+function drawUnit(u){const ln=ok(u)&&u.lean,x=u.x*TS+(ln?(ln.x-u.x)*TS*.45:0),y=u.y*TS+(ln?(ln.y-u.y)*TS*.45:0),p=u.side==='p',cn=B.sc.faction==='cn';
+  if(!ok(u)){ctx.save();ctx.translate(x,y);ctx.rotate(u.face+1.2);ctx.fillStyle=p?'#3a4628':cn?'#9a8e6c':'#86692c';ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,7);ctx.fill();if(u.loot){ctx.fillStyle='#16140e';ctx.fillRect(-2,6,11,2);ctx.fillStyle='#ffe28a';ctx.fillRect(8,5,2,2)}ctx.restore();
+    if(p&&u.state==='down'){ctx.fillStyle=u.stab?'#b8e0a0':'#ff5a4a';ctx.fillRect(x-1.5,y-15,3,9);ctx.fillRect(x-4.5,y-12,9,3)}return}
+  const sel=B.sel.has(u);
+  if(p&&u.role==='leader'){ctx.strokeStyle='rgba(255,226,138,.3)';ctx.lineWidth=1;ctx.setLineDash([2,6]);ctx.beginPath();ctx.arc(u.x*TS,u.y*TS,7*TS,0,7);ctx.stroke();ctx.setLineDash([])}
+  if(p&&u.led){ctx.fillStyle='#ffe28a';ctx.beginPath();ctx.arc(x+11,y-12,1.8,0,7);ctx.fill()}
+  if(sel){ctx.strokeStyle='#ffe28a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y,10,0,7);ctx.stroke();
+    if(u.path.length){ctx.strokeStyle='rgba(255,226,138,.5)';ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(x,y);for(const n of u.path)ctx.lineTo(n.x*TS,n.y*TS);ctx.stroke();ctx.setLineDash([]);const e=u.path[u.path.length-1];ctx.fillStyle='#ffe28a';ctx.fillRect(e.x*TS-2,e.y*TS-2,4,4)}}
+  ctx.save();ctx.translate(x,y);ctx.rotate(u.face);const prone=!u.moving&&(u.mode==='sneak'||u.supp>55)||(u.moving&&u.mode==='sneak');
+  ctx.fillStyle='#1c1a14';ctx.fillRect(2,-1,u.w===WPN.dp||u.w===WPN.bar?12:10,2);if(u.inMelee){ctx.fillStyle='#f0f0f0';ctx.fillRect(12,-.7,6,1.4)}
+  ctx.fillStyle=p?'#4f6534':cn?'#b9ab85':'#a8853a';ctx.strokeStyle='rgba(0,0,0,.75)';ctx.lineWidth=1;
+  ctx.beginPath();if(prone)ctx.ellipse(-4,0,8,4,0,0,7);else ctx.ellipse(0,0,4.5,6.5,0,0,7);ctx.fill();ctx.stroke();
+  ctx.fillStyle=p?'#2c3a1e':cn?'#8c7f5e':'#6d4f1c';ctx.beginPath();ctx.arc(1,0,3.4,0,7);ctx.fill();ctx.restore();
+  if(u.revealT>2.35){ctx.fillStyle='rgba(255,230,140,.9)';ctx.beginPath();ctx.arc(x+Math.cos(u.face)*14,y+Math.sin(u.face)*14,4,0,7);ctx.fill()}
+  if(p){ctx.fillStyle='#000';ctx.fillRect(x-9,y-14,18,4);ctx.fillStyle=u.hp>u.maxhp*.5?'#8fb04a':'#d2604e';ctx.fillRect(x-8,y-13,16*u.hp/u.maxhp,2);
+    if(u.supp>5){ctx.fillStyle='#ffd66b';ctx.fillRect(x-8,y-10,16*u.supp/100,1.5)}
+    ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.lineWidth=2.5;ctx.strokeStyle='#000';ctx.strokeText(u.idx+1,x,y-17);ctx.fillStyle='#fff';ctx.fillText(u.idx+1,x,y-17);
+    if(u.healT>0){ctx.strokeStyle='#b8e0a0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,12,-1.57,-1.57+6.28*u.healT/3.5);ctx.stroke()}}
+  else{ctx.fillStyle=u.hvt?'#ffe28a':'#e0503c';ctx.beginPath();ctx.moveTo(x,y-10);ctx.lineTo(x-4,y-16);ctx.lineTo(x+4,y-16);ctx.fill();
+    if(u.supp>55){ctx.fillStyle='#ffd66b';ctx.fillRect(x-6,y-19,12*u.supp/100,1.5)}}}
+
+function render(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.drawImage(bg,0,0,CW,CH);
+  for(const d of B.decals){if(d.k==='c'){ctx.fillStyle='rgba(30,24,16,.55)';ctx.beginPath();ctx.arc(d.x*TS,d.y*TS,d.r,0,7);ctx.fill();ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.arc(d.x*TS,d.y*TS,d.r*.55,0,7);ctx.fill()}
+    else{ctx.fillStyle='rgba(110,20,14,.55)';ctx.beginPath();ctx.arc(d.x*TS,d.y*TS,d.r,0,7);ctx.fill()}}
+  if(B.night){ctx.fillStyle=B.flareT>0?'rgba(40,36,20,.18)':'rgba(6,10,36,.5)';ctx.fillRect(0,0,CW,CH)}
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(fogC,0,0,CW,CH);
+  for(const z of B.zones){const hold=B.ph.type==='hold',col=z.cap?'#b8e0a0':hold?(z.lost>0?'#ff8a7a':'#9cc8e6'):B.ph.type==='exfil'?'#b8e0a0':'#ffe28a';
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.arc(z.x*TS,z.y*TS,z.r*TS,0,7);ctx.stroke();ctx.setLineDash([]);
+    if(z.prog>0&&!z.cap){ctx.lineWidth=4;ctx.beginPath();ctx.arc(z.x*TS,z.y*TS,z.r*TS,-1.57,-1.57+6.28*z.prog/4);ctx.stroke()}
+    ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.8)';const ty=Math.max(14,(z.y-z.r)*TS-6);ctx.strokeText(z.n+(z.cap?' ✓':''),z.x*TS,ty);ctx.fillStyle=col;ctx.fillText(z.n+(z.cap?' ✓':''),z.x*TS,ty)}
+  {const k=B.crate,x=k.x*TS,y=k.y*TS;ctx.fillStyle=k.n>0?'#5a6a34':'#4a463c';ctx.fillRect(x-8,y-6,16,12);ctx.strokeStyle='#1c1a14';ctx.lineWidth=1;ctx.strokeRect(x-7.5,y-5.5,15,11);ctx.beginPath();ctx.moveTo(x-8,y);ctx.lineTo(x+8,y);ctx.stroke();ctx.font='bold 9px sans-serif';ctx.textAlign='center';ctx.lineWidth=2.5;ctx.strokeStyle='#000';ctx.strokeText('탄약 '+k.n,x,y+17);ctx.fillStyle=k.n>0?'#ffe28a':'#999';ctx.fillText('탄약 '+k.n,x,y+17)}
+  for(const u of B.en)if(!ok(u)&&u.seen)drawUnit(u);for(const u of B.pl)if(!ok(u))drawUnit(u);
+  for(const u of B.en)if(ok(u)&&u.vis){u.seen=true;drawUnit(u)}for(const u of B.pl)if(ok(u))drawUnit(u);
+  for(const u of B.en)if(!ok(u)&&!u.seen&&B.fog[(u.y|0)*MW+(u.x|0)])u.seen=true;
+  ctx.font='bold 11px sans-serif';ctx.textAlign='center';for(const u of B.pl){const q=u.say;if(!q||!ok(u)||q.t>2.6)continue;const a=q.t>2.1?(2.6-q.t)/.5:1,w=ctx.measureText(q.s).width+12,x=clamp(u.x*TS,w/2+2,CW-w/2-2),y=Math.max(20,u.y*TS-40);
+    ctx.globalAlpha=a;ctx.fillStyle='rgba(250,246,228,.95)';ctx.beginPath();ctx.roundRect(x-w/2,y-13,w,18,5);ctx.fill();ctx.beginPath();ctx.moveTo(u.x*TS-4,y+4);ctx.lineTo(u.x*TS+4,y+4);ctx.lineTo(u.x*TS,y+11);ctx.fill();
+    ctx.fillStyle='#1c1a12';ctx.fillText(q.s,x,y);ctx.globalAlpha=1}
+  ctx.lineWidth=1.5;for(const t of B.tracers){if(!t.p&&!B.fog[(t.y1|0)*MW+(t.x1|0)]&&!B.fog[(t.y0|0)*MW+(t.x0|0)])continue;ctx.strokeStyle=t.p?`rgba(255,240,170,${1-t.t/.12})`:`rgba(255,150,120,${1-t.t/.12})`;ctx.beginPath();ctx.moveTo(t.x0*TS,t.y0*TS);ctx.lineTo(t.x1*TS,t.y1*TS);ctx.stroke()}
+  for(const k of B.smokes){const a=Math.min(1,k.t/2.5)*Math.min(1,(k.T-k.t)/5);for(let i=0;i<11;i++){const an=i*2.4+k.sd,rr=i?k.r*.62*(.55+((i*37)%10)/22):0,dr=Math.sin(B.t*.5+i+k.sd)*4;
+      ctx.fillStyle=`rgba(${205+(i%3)*12},${205+(i%3)*12},${200+(i%3)*12},${.42*a})`;ctx.beginPath();ctx.arc((k.x+Math.cos(an)*rr)*TS+dr,(k.y+Math.sin(an)*rr)*TS+dr*.6,k.r*TS*(.42+((i*13)%7)/24),0,7);ctx.fill()}}
+  for(const g of B.grens){const k=Math.min(1,g.t/g.T),x=(g.x0+(g.x-g.x0)*k)*TS,y=(g.y0+(g.y-g.y0)*k)*TS-Math.sin(k*Math.PI)*24;
+    ctx.strokeStyle=g.smoke?'rgba(230,230,230,.8)':'rgba(255,90,70,.8)';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(g.x*TS,g.y*TS,(g.smoke?3.1:2.7)*TS,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#111';ctx.beginPath();ctx.arc(x,y,3,0,7);ctx.fill()}
+  for(const f of B.fx){const k=f.t/.6;ctx.fillStyle=`rgba(255,${200-k*150|0},60,${1-k})`;ctx.beginPath();ctx.arc(f.x*TS,f.y*TS,10+k*46,0,7);ctx.fill();ctx.fillStyle=`rgba(60,50,40,${.6*(1-k)})`;ctx.beginPath();ctx.arc(f.x*TS,f.y*TS-k*14,8+k*30,0,7);ctx.fill()}
+  ctx.font='bold 11px sans-serif';ctx.textAlign='center';for(const t of B.texts){ctx.globalAlpha=1-t.t/1.4;ctx.lineWidth=3;ctx.strokeStyle='#000';ctx.strokeText(t.s,t.x*TS,t.y*TS-t.t*16);ctx.fillStyle=t.c;ctx.fillText(t.s,t.x*TS,t.y*TS-t.t*16)}ctx.globalAlpha=1;
+  if(B.drag&&B.drag.box){const d=B.drag;ctx.strokeStyle='#ffe28a';ctx.lineWidth=1;ctx.strokeRect(d.x0*TS,d.y0*TS,(d.x1-d.x0)*TS,(d.y1-d.y0)*TS)}
+  if(B.hover){const h=B.hover,x=h.x*TS,y=h.y*TS;let s='';
+    if(B.grenMode){const sm=B.grenMode==='smoke';ctx.strokeStyle=sm?'#e6e6e6':'#ff8a7a';ctx.beginPath();ctx.arc(x,y,(sm?3.1:2.7)*TS,0,7);ctx.stroke();s=sm?'연막탄 투척 지점':'수류탄 투척 지점'}
+    else{const e=unitAt(h,B.en.filter(u=>ok(u)&&u.vis),1);const u=[...B.sel][0];const cp=e?null:unitAt(h,B.en.filter(q=>q.state==='dead'&&q.loot&&q.seen).concat(B.pl.filter(q=>q.state!=='ok'&&q.loot)),.8);
+      if(cp){const L=cp.loot;s=[L.w?`${L.w.n} ${L.n}발`:'',L.gren?`수류탄 ${L.gren}`:'',L.smoke?`연막탄 ${L.smoke}`:''].filter(Boolean).join(' · ')+' · 오른쪽 클릭으로 줍기'}else
+      if(e&&u){const d=dist(u,e);s=d<4?'오른쪽 클릭: 총검 돌격':d>u.w.range?'사거리 밖':!sl(u,e)?'사선 막힘':`명중률 ${Math.round(hitChance(u,e)*100)}%`+(!los(u.x,u.y,e.x,e.y)?' · 모퉁이 사격':'')}
+      else if(h.x>=0&&h.y>=0&&h.x<MW&&h.y<MH){const t=TILE[tileOf(h.x,h.y)];s=t.n+(t.c?` · 엄폐 ${Math.round(t.c*100)}%`:'')+(t.m?'':' · 통행 불가')}}
+    if(s){ctx.font='11px sans-serif';ctx.textAlign='left';const w=ctx.measureText(s).width+10,bx=Math.min(x+12,CW-w-2),by=Math.min(y+12,CH-20);ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(bx,by,w,17);ctx.fillStyle='#fff';ctx.fillText(s,bx+5,by+12)}}}
+
+function updHUD(force){if(!force&&B.hudT>0)return;B.hudT=.15;const ph=B.ph;let s='';
+  const mm=t=>{t=Math.max(0,Math.ceil(t));return`${t/60|0}:${String(t%60).padStart(2,'0')}`};
+  if(ph.type==='hold')s=` · 남은 시간 <b>${mm(ph.time-B.phT)}</b>`+(B.zones[0].lost>0?` · <b style="color:var(--danger)">진지 피탈 위기 ${mm(12-B.zones[0].lost)}</b>`:'');
+  else if(ph.type==='capture')s=` · <b>${B.zones.filter(z=>z.cap).length}/${B.zones.length}</b> 점령`;
+  $('b-obj').innerHTML=`<b>임무 ${B.phIdx+1}/${B.sc.phases.length}</b> ${ph.text}${s}`;
+  $('b-pause').classList.toggle('on',B.paused&&B.started);$('b-speed').textContent='속도 ×'+B.speed;$('b-mute').textContent=muted?'소리 끔':'소리 켬';
+  $('b-retreat').textContent=B.retreatArm>0?(B.pl.some(u=>u.state!=='ok')?'쓰러진 병사는 포로가 됩니다. 정말 철수?':'정말 철수? 다시 누르기'):'철수';
+  if(B.night)$('b-flare').firstChild.textContent=`조명탄 ${B.flares}`;
+  const S=[...B.sel],md=S.length?S[0].mode:null,fmd=S.length?S[0].fm:null;
+  document.querySelectorAll('#orders [data-o]').forEach(b=>{const o=b.dataset.o;b.classList.toggle('on',o===md||o===fmd||((o==='gren'||o==='smoke')&&B.grenMode===o)||(o==='hold'&&S.length>0&&S.every(u=>u.holdFire)))});
+  const cards=$('squad').children;B.pl.forEach((u,i)=>{const c=cards[i];if(!c)return;c.classList.toggle('sel',B.sel.has(u));c.classList.toggle('dn',!ok(u));
+    const st=u.state==='dead'?'전사':u.state==='down'?(u.stab?'중상·안정':`출혈 ${mm(u.bleed)}`):u.supp>88?'공황':u.supp>55?'제압됨':u.healT>0?'치료 중':u.broken?'총기 고장':u.jamT>0?'기능 고장 처치':u.lootT>0&&u.lootTgt?'총기 노획 중':u.ammo<=0&&u.res<=0?'탄약 없음':u.reloadT>0?'재장전':u.moving?{walk:'전진',run:'질주',sneak:'포복'}[u.mode]:u.inMelee?'백병전':u.lean?'모퉁이 사격':u.target?'교전':u.holdFire?'사격 중지':'대기';
+    c.children[2].textContent=st;c.children[2].style.color=u.state!=='ok'||u.supp>55||u.broken||(u.ammo<=0&&u.res<=0)?'var(--danger)':'';
+    c.children[3].textContent=`${u.w.n} ${u.ammo}+${u.res}발 · ${FM[u.fm]}사격 · 수류탄 ${u.gren}${u.smoke?` · 연막 ${u.smoke}`:''}${u.kitsMax?` · 구급낭 ${u.kits}`:''}${u.fat>60?` · ${u.fat>90?'탈진':'지침'}`:''}`;
+    c.children[4].children[0].firstChild.style.width=(u.hp/u.maxhp*100)+'%';c.children[4].children[1].firstChild.style.width=u.supp+'%';c.children[4].children[2].firstChild.style.width=(u.fat||0)+'%'})}
+
+/* ───── 입력 ───── */
+function evPt(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*MW,y:(e.clientY-r.top)/r.height*MH}}
+function unitAt(p,list,rad){let b=null,bd=rad;for(const u of list){const d=Math.hypot(u.x-p.x,u.y-p.y);if(d<bd){bd=d;b=u}}return b}
+function command(p){if(!B||B.over)return;const S=[...B.sel].filter(ok);if(!S.length)return;
+  const e=unitAt(p,B.en.filter(u=>ok(u)&&u.vis),1);
+  if(e){for(const u of S){u.forced=e;u.chase=true;u.healTgt=null;u.acqT=0}ftext(e,'공격 목표','#ff8a7a');say(S[0],'attack',1);return}
+  const cp=unitAt(p,B.en.filter(u=>u.state==='dead'&&u.loot&&u.seen),.8);
+  const doLoot=(cp,what)=>{const need=u=>(u.broken||(u.ammo<=0&&u.res<=0))?0:1,u=S.slice().sort((a,b)=>need(a)-need(b)||dist(a,cp)-dist(b,cp))[0];
+    u.lootTgt=cp;u.lootWhat=what||'all';u.lootT=0;u.forced=null;u.chase=false;u.healTgt=null;u.path=findPath(u.x,u.y,cp.x,cp.y);ftext(cp,cp.side==='p'?'총기 인수 지시':'총기 노획 지시','#b8e0a0');say(u,cp.side==='p'?'lootf':'loot',1)};
+  const ask=cp=>{const L=cp.loot,gun=L.w&&L.n>0,gr=L.gren>0||L.smoke>0;if(!(gun&&gr))return doLoot(cp,'all');const m=$('lootmenu'),gt=[L.gren?`수류탄 ${L.gren}`:'',L.smoke?`연막탄 ${L.smoke}`:''].filter(Boolean).join(', ');
+    m.innerHTML=`<b>${cp.side==='p'?esc(cp.name):'적'}에게서 무엇을 가져올까요?</b><button class="btn" data-w="gun">총 · ${L.w.n} ${L.n}발</button><button class="btn" data-w="gren">${gt}만</button><button class="btn" data-w="all">모두</button><button class="btn" data-w="">취소</button>`;
+    m.style.left=Math.min(78,p.x/MW*100)+'%';m.style.top=Math.min(62,p.y/MH*100)+'%';m.hidden=false;m.onclick=e=>{const b=e.target.closest('[data-w]');if(!b)return;m.hidden=true;if(b.dataset.w&&cp.loot)doLoot(cp,b.dataset.w);updHUD(true)}};
+  if(cp){ask(cp);return}
+  const fr=unitAt(p,B.pl.filter(u=>u.state!=='dead'),1),med=S.find(u=>u.kits>0);
+  if(fr&&med&&fr!==med&&(fr.state==='down'&&!fr.stab||ok(fr)&&fr.hp<fr.maxhp)){med.healTgt=fr;med.healT=0;med.forced=null;med.path=findPath(med.x,med.y,fr.x,fr.y);ftext(fr,'응급처치 지시','#b8e0a0');say(med,'medic',1);return}
+  const fb=unitAt(p,B.pl.filter(u=>u.state!=='ok'&&u.loot),.8);if(fb){ask(fb);return}
+  const taken=new Set();for(const u of S){const d=nearFree(clamp(p.x|0,0,MW-1),clamp(p.y|0,0,MH-1),taken);if(!d)continue;taken.add(d.y*MW+d.x);u.path=findPath(u.x,u.y,d.x,d.y);u.forced=null;u.chase=false;u.healTgt=null;u.healT=0;u.lootTgt=null}
+  say(S[0],S[0].mode==='run'?'run':S[0].mode==='sneak'?'sneak':'move',1)}
+function grenadeAt(p){const sm=B.grenMode==='smoke',S=[...B.sel].filter(u=>ok(u)&&(sm?u.smoke:u.gren)>0&&u.supp<=88);let best=null,bd=9.5;
+  for(const u of S){const d=Math.hypot(u.x-p.x,u.y-p.y);if(d<bd&&los(u.x,u.y,p.x,p.y)){bd=d;best=u}}
+  if(!best)return toast('던질 수 있는 병사가 없습니다 (사거리 9칸, 시선이 닿아야 함)');throwGren(best,p.x,p.y,sm);B.grenMode=false}
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointerdown',e=>{try{window.focus()}catch(_){}$('lootmenu').hidden=true;if(!B||!B.started||B.over)return;const p=evPt(e);
+  if(e.button===2){if(B.grenMode){B.grenMode=false;return}return command(p)}
+  if(e.button===0){B.drag={x0:p.x,y0:p.y,x1:p.x,y1:p.y,box:false,touch:e.pointerType==='touch',shift:e.shiftKey};try{cv.setPointerCapture(e.pointerId)}catch(_){}}});
+cv.addEventListener('pointermove',e=>{if(!B)return;const p=evPt(e);if(e.pointerType!=='touch')B.hover=p;const d=B.drag;if(d){d.x1=p.x;d.y1=p.y;if(!d.touch&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>.5)d.box=true}});
+cv.addEventListener('pointerleave',()=>{if(B)B.hover=null});
+cv.addEventListener('pointerup',e=>{if(!B||!B.drag)return;const d=B.drag;B.drag=null;const p={x:d.x1,y:d.y1};
+  if(d.box){if(!d.shift)B.sel.clear();const x0=Math.min(d.x0,d.x1),x1=Math.max(d.x0,d.x1),y0=Math.min(d.y0,d.y1),y1=Math.max(d.y0,d.y1);for(const u of B.pl)if(ok(u)&&u.x>=x0&&u.x<=x1&&u.y>=y0&&u.y<=y1)B.sel.add(u);return updHUD(true)}
+  if(B.grenMode){grenadeAt(p);return updHUD(true)}
+  const u=unitAt(p,B.pl.filter(ok),.9);
+  if(u){if(d.shift){B.sel.has(u)?B.sel.delete(u):B.sel.add(u)}else{B.sel.clear();B.sel.add(u)}}
+  else if(d.touch)command(p);else if(!d.shift)B.sel.clear();
+  updHUD(true)});
+function order(o){if(!B||!B.started||B.over)return;const S=[...B.sel].filter(ok);
+  if(o==='all'){B.sel=new Set(B.pl.filter(ok))}
+  else if(o==='walk'||o==='run'||o==='sneak'){if(!S.length)return toast('먼저 병사를 선택하십시오');S.forEach(u=>u.mode=o)}
+  else if(FM[o]){if(!S.length)return toast('먼저 병사를 선택하십시오');S.forEach(u=>u.fm=o);say(S[0],o==='supp'?'fsupp':o,1)}
+  else if(o==='reload'){let n=0;S.forEach(u=>{if(u.reloadT<=0&&u.ammo<u.w.clip&&u.res>0&&!u.broken){u.res+=u.ammo;u.ammo=0;u.burst=0;u.reloadT=u.w.rel*(1.2-u.agi/300);n++}});if(!S.length)return toast('먼저 병사를 선택하십시오');if(!n)return toast('장전할 필요가 없거나 예비 탄약이 없습니다');say(S[0],'reload',1)}
+  else if(o==='gren'){if(!S.some(u=>u.gren>0))return toast('선택한 병사에게 수류탄이 없습니다');B.grenMode=B.grenMode==='gren'?false:'gren'}
+  else if(o==='smoke'){if(!S.some(u=>u.smoke>0))return toast('선택한 병사에게 연막탄이 없습니다');B.grenMode=B.grenMode==='smoke'?false:'smoke'}
+  else if(o==='hold'){const all=S.length&&S.every(u=>u.holdFire);S.forEach(u=>{u.holdFire=!all;if(u.holdFire){u.target=null;u.forced=null}});if(S.length&&!all)say(S[0],'hold',1)}
+  else if(o==='stop'){S.forEach(u=>{u.path=[];u.forced=null;u.chase=false;u.healTgt=null});say(S[0],'stop',1)}
+  else if(o==='flare'){if(!B.night||B.flares<=0)return toast('조명탄이 없습니다');if(B.flareT>0)return;B.flares--;B.flareT=22;B.light=.88;sfx('flare');log('조명탄 발사!','#ffe28a');say(B.pl.find(ok),'flare',1);computeVis()}
+  updHUD(true)}
+$('orders').addEventListener('click',e=>{const b=e.target.closest('[data-o]');if(b)order(b.dataset.o)});
+$('squad').addEventListener('click',e=>{const c=e.target.closest('.uc');if(!c||!B)return;const u=B.pl[+c.dataset.i];if(!ok(u)){const med=[...B.sel].find(m=>ok(m)&&m.kits>0);if(med&&u.state==='down')command(u);return}
+  if(e.shiftKey){B.sel.has(u)?B.sel.delete(u):B.sel.add(u)}else{B.sel.clear();B.sel.add(u)}updHUD(true)});
+function togglePause(){if(!B||!B.started||B.over)return;B.paused=!B.paused;$('banner').hidden=!B.paused;$('banner').textContent='일시정지 · 명령은 내릴 수 있습니다';updHUD(true)}
+$('b-pause').onclick=togglePause;
+$('b-speed').onclick=()=>{if(B){B.speed=B.speed===1?2:B.speed===2?.5:1;updHUD(true)}};
+$('b-mute').onclick=()=>{muted=!muted;if(B)updHUD(true)};
+$('b-retreat').onclick=()=>{if(!B||!B.started||B.over)return;if(B.retreatArm>0)endBattle(false,'철수했습니다',true);else{B.retreatArm=3;updHUD(true)}};
+$('brief').addEventListener('click',e=>{if(e.target.id==='brief-go'){initAudio();$('brief').hidden=true;B.started=true;B.paused=false;B.sel=new Set(B.pl);updHUD(true)}});
+window.addEventListener('keydown',e=>{if(!B||$('battle').hidden||!B.started||e.target.tagName==='INPUT')return;const k=e.code;
+  const M={KeyQ:'walk',KeyW:'run',KeyE:'sneak',KeyG:'gren',KeyF:'hold',KeyS:'stop',KeyA:'all',KeyL:'flare',KeyR:'reload',KeyV:'smoke',KeyZ:'aim',KeyX:'norm',KeyC:'supp'};
+  if(k==='Space'){e.preventDefault();togglePause()}else if(M[k]){e.preventDefault();order(M[k])}
+  else if(/^(Digit|Numpad)[1-6]$/.test(k)){e.preventDefault();const u=B.pl[+k.slice(-1)-1];if(u&&ok(u)){if(!e.shiftKey)B.sel.clear();B.sel.add(u);updHUD(true)}}
+  else if(k==='Escape'){B.grenMode=false;updHUD(true)}});
+
+/* ───── 루프 ───── */
+let last=0;function frame(ts){requestAnimationFrame(frame);const real=Math.min(.05,(ts-last)/1000||0);last=ts;if(!B||$('battle').hidden)return;
+  if(B.started&&!B.paused&&!B.over){const dt=real*B.speed;update(dt);if(!B)return}
+  B.rt+=real;for(const u of B.pl)if(u.say)u.say.t+=real;
+  if(B.retreatArm>0){B.retreatArm-=real;if(B.retreatArm<=0)updHUD(true)}
+  B.hudT-=real;updHUD();render()}
+load();renderHQ();requestAnimationFrame(frame);
+window.__game={get B(){return B},get C(){return C},SC,startBattle,update,endBattle,order,command};
+})();
+</script>
+</body>
+</html>
