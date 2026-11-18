@@ -82,6 +82,7 @@ kbd{font:600 10px var(--body);border:1px solid currentColor;border-radius:2px;pa
 .op.sel{border-color:var(--accent);background:var(--panel2)}
 .op.lock{opacity:.45;cursor:not-allowed}
 .op .d{font-size:11px;color:var(--muted);letter-spacing:.08em}
+.star{color:#ffd23a;font-size:15px;line-height:1;text-shadow:0 0 2px #000}
 .df{letter-spacing:0;white-space:nowrap;color:var(--olive)}.df.d3{color:var(--accent)}.df.d4,.df.d5{color:var(--danger)}
 .op{padding:7px 12px}.op h3{font-size:17px;margin:1px 0 2px}
 .op p{margin:0;font-size:12.5px;color:var(--muted)}
@@ -216,7 +217,9 @@ const gearWt=s=>{const g=s.gear;return WT[g.w]+CWT[g.w]*g.clips+g.gren*.6+(g.smo
 const gearCap=s=>10+s.st.hp*1.5;
 function fitGear(s){const g=s.gear;while(gearWt(s)>gearCap(s)+1e-6){if(g.clips>3)g.clips--;else if(g.smoke>0)g.smoke--;else if(g.gren>0)g.gren--;else if(g.kits>0)g.kits--;else if(g.clips>1)g.clips--;else break}}
 function gearOf(s){if(!s.gear){const t=GT[s.role]||GT.rifle;s.gear={w:t[0],clips:t[1],gren:t[2],kits:t[3]};if(s.role!=='leader')s.role='soldier';fitGear(s)}if(s.gear.smoke===undefined){s.gear.smoke=1;fitGear(s)}return s.gear}
-const roleName=s=>(s.role==='leader'?'분대장':{bar:'자동소총수',sniper:'저격수'}[s.gear.w]||'소총수')+(s.gear.kits?' · 의무':'');
+// 출동하는 대원 중 계급이 가장 높은 병사가 분대장. 계급이 같으면 경험치가 많은 쪽.
+const pickLeader=list=>list.slice().sort((a,b)=>rankOf(b.xp)-rankOf(a.xp)||b.xp-a.xp)[0];
+const roleName=s=>({bar:'자동소총수',sniper:'저격수'}[s.gear.w]||'소총수')+(s.gear.kits?' · 의무':'');
 const RANKS=['이병','일병','상병','병장','하사','중사','상사'],RXP=[0,60,150,280,450,700,1000];
 const rankOf=xp=>{let r=0;for(let i=0;i<RXP.length;i++)if(xp>=RXP[i])r=i;return r};
 const STN={hp:'체력',tough:'강인함',aim:'사격술',agi:'민첩성',per:'경계'};
@@ -476,17 +479,17 @@ let toastT=0;function toast(m){const t=$('toast');t.textContent=m;t.hidden=false
 /* ───── 본부 화면 ───── */
 let resetArm=false,hqFilter='all';const MAXMEN=12;
 function recruit(){const A=alive();if(A.length>=MAXMEN)return toast(`분대 정원은 ${MAXMEN}명입니다`);
-  const role=!A.some(x=>x.role==='leader')?'leader':!A.some(x=>x.gear.kits>0)?'medic':!A.some(x=>x.gear.w==='bar')?'bar':pick(['rifle','rifle','rifle','gren','sniper']);
+  const role=!A.some(x=>x.gear.kits>0)?'medic':!A.some(x=>x.gear.w==='bar')?'bar':pick(['rifle','rifle','rifle','gren','sniper']);
   const n=mkSoldier(role,false);C.roster.push(n);if(C.roster.filter(x=>x.sel).length<6)n.sel=true;save();toast(`신병 ${n.name}(${roleName(n)}) 전입`);renderHQ()}
 function renderHQ(){
   $('battle').hidden=true;$('debrief').hidden=true;const el=$('hq');el.hidden=false;
   C.roster.forEach(s=>{if(!ready(s))s.sel=false});
-  const squad=C.roster.filter(s=>s.sel);
+  const squad=C.roster.filter(s=>s.sel),ldr=pickLeader(squad);
   const stat=(s,k)=>`<span>${STN[k]}</span><span class="pips ${s.st[k]<=3?'lo':s.st[k]>=7?'hi':''}">${Array.from({length:10},(_,i)=>`<i class="${i<s.st[k]?'f':''}"></i>`).join('')}</span><b class="${s.st[k]<=3?'lo':s.st[k]>=7?'hi':''}">${s.st[k]}</b><button class="up" data-up="${s.id}:${k}" aria-label="${STN[k]} 올리기" title="${STN[k]} +1" ${(s.pts>0||C.pts>0)&&s.st[k]<10?'':'disabled'}>+</button>`;
   const F={all:alive(),ready:alive().filter(ready),hurt:alive().filter(x=>x.out>0)};
   const cards=(F[hqFilter]||[]).map(s=>{const r=rankOf(s.xp),nx=RXP[r+1];
     return`<article class="sol ${s.sel?'go':''} ${s.out?'out':''}">
-      <div class="top"><span class="rank">${RANKS[r]}</span><input class="nm" id="nm-${s.id}" data-id="${s.id}" value="${esc(s.name)}" maxlength="8" aria-label="이름 수정" title="이름을 눌러 고칠 수 있습니다"></div>
+      <div class="top">${s===ldr?'<span class="star" title="출동하는 대원 중 계급이 가장 높아 분대장을 맡습니다">★</span>':''}<span class="rank">${RANKS[r]}</span><input class="nm" id="nm-${s.id}" data-id="${s.id}" value="${esc(s.name)}" maxlength="8" aria-label="이름 수정" title="이름을 눌러 고칠 수 있습니다"></div>
       <div class="role">${roleName(s)} · ${WPN[s.gear.w].n} ${WPN[s.gear.w].clip*s.gear.clips}발</div>
       <div class="gear"><label>총기 <select id="gw-${s.id}" data-gw="${s.id}">${Object.keys(WT).map(k=>`<option value="${k}" ${k===s.gear.w?'selected':''}>${WPN[k].n} ${WT[k]}kg</option>`).join('')}</select></label>
         ${[['clips','탄창'],['gren','수류탄'],['smoke','연막탄'],['kits','구급낭']].map(([k,n])=>`<span class="stp">${n} <button data-gear="${s.id}:${k}:-1" aria-label="${n} 줄이기">−</button><b>${s.gear[k]}</b><button data-gear="${s.id}:${k}:1" aria-label="${n} 늘리기">+</button></span>`).join('')}
@@ -517,7 +520,7 @@ function renderHQ(){
       <b>철수</b> — 작전 도중 철수하면 걸을 수 있는 병사만 돌아옵니다. 쓰러진 병사는 부상자든 전사자든 적진에 남겨져 포로로 기록되고 분대에서 빠집니다.<br>
       <b>모퉁이</b> — 벽이나 바위 옆에 멈춰 선 병사는 알아서 모퉁이 밖으로 몸을 내밀어 살피고 쏩니다. 내민 동안에도 엄폐 60%를 받고, 쏠 상대가 없으면 벽 뒤에 숨어 보이지 않습니다. 옆으로 돌아와 몸통이 보이는 적에게는 엄폐가 통하지 않습니다. 적도 똑같이 모퉁이를 씁니다.<br>
       <b>백병전</b> — 적과 한 칸 남짓까지 붙으면 사격 대신 총검으로 싸웁니다. 민첩성과 강인함이 높을수록, 상대가 제압당해 있을수록 유리합니다. 네 칸 안의 적을 오른쪽 클릭하면 달려들어 찌르고, 탄약이 없거나 총이 고장난 병사는 거리와 상관없이 돌격합니다. 적도 가까워지면 달려듭니다.<br>
-      <b>분대장</b> — 분대장 둘레 일곱 칸(지도의 점선 원) 안에 있는 대원은 제압을 30% 덜 받고 70% 빨리 회복합니다. 지휘를 받는 병사는 머리 옆에 노란 점이 붙습니다. 분대장이 쓰러지면 분대 전체가 크게 동요합니다.<br>
+      <b>분대장</b> — 출동하는 대원 중 계급이 가장 높은 병사가 자동으로 분대장이 됩니다(계급이 같으면 경험이 많은 쪽). 병적부와 전투 화면에 ★ 표시가 붙습니다. 분대장 둘레 일곱 칸(지도의 점선 원) 안에 있는 대원은 제압을 30% 덜 받고 70% 빨리 회복합니다. 지휘를 받는 병사는 머리 옆에 노란 점이 붙습니다. 분대장이 쓰러지면 분대 전체가 크게 동요합니다.<br>
       <b>장비</b> — 병적부에서 병사마다 총기, 탄창, 수류탄, 구급낭 수를 정합니다. 휴대 한도는 10kg + 체력×1.5kg이고, 넘게는 들 수 없습니다. 무거울수록 느려지고 빨리 지칩니다(전투 카드의 파란 막대). 지치면 느려지고 명중률이 떨어지며, 탈진하면 뛰지 못합니다. 멈춰 서면 회복합니다. 병과는 든 총에 따라 소총수·자동소총수·저격수로 정해지고, 구급낭을 든 병사는 누구든 응급처치를 할 수 있습니다.<br>
       <b>충원</b> — 병적부의 「신병 충원」을 누르면 신병이 한 명 들어옵니다. 정원은 12명이고, 신병은 능력치가 낮습니다. 인원이 줄어도 자동으로 채워지지 않습니다.<br>
       <b>연막탄</b> — 연막탄(V)을 던지면 2초 뒤부터 30초 동안 지름 여섯 칸의 연막이 퍼집니다. 연막은 양쪽 모두의 시야와 사선을 막습니다. 연막 속에서는 바로 옆만 보입니다. 기관총 앞을 가로지르거나 부상병을 구하러 갈 때 쓰십시오. 병사마다 기본 한 발이고 장비에서 세 발까지 늘릴 수 있습니다(개당 0.5kg).<br>
@@ -629,15 +632,16 @@ function startBattle(sc){
      crate:{x:sc.crate[0]+.5,y:sc.crate[1]+.5,n:16},rt:0,lastSay:-9,lastSpot:-99,paused:true,speed:1,sel:new Set(),over:false,started:false,night:!!sc.night,light:sc.night?.42:1,flares:sc.night?3:0,flareT:0,visT:0,hudT:0,
      fog:new Uint8Array(MW*MH),grenMode:false,hover:null,drag:null,retreatArm:0};
   const squad=C.roster.filter(s=>s.sel&&ready(s)).slice(0,6);
+  const L=pickLeader(squad);
   squad.forEach((s,i)=>{const R=gearOf(s),d=sc.deploy[i];const hp=60+s.st.hp*6;
-    const u=mkUnit('p',{w:R.w,ref:s,name:s.name,rank:RANKS[rankOf(s.xp)],role:s.role,idx:i,hp,maxhp:hp,aim:s.st.aim*10,tough:s.st.tough*10,agi:s.st.agi*10,per:s.st.per*10,gren:R.gren,kits:R.kits});u.res=u.resMax=u.w.clip*(R.clips-1);u.load=gearWt(s)/gearCap(s);u.fat=0;u.kitsMax=R.kits;u.smoke=R.smoke;
+    const u=mkUnit('p',{w:R.w,ref:s,name:s.name,rank:RANKS[rankOf(s.xp)],role:s===L?'leader':'soldier',idx:i,hp,maxhp:hp,aim:s.st.aim*10,tough:s.st.tough*10,agi:s.st.agi*10,per:s.st.per*10,gren:R.gren,kits:R.kits});u.res=u.resMax=u.w.clip*(R.clips-1);u.load=gearWt(s)/gearCap(s);u.fat=0;u.kitsMax=R.kits;u.smoke=R.smoke;
     const f=nearFree(d[0],d[1]);u.x=f.x+.5;u.y=f.y+.5;B.pl.push(u)});
   for(const e of sc.enemies)spawnEnemy(e[0],e[1],e[2],e[3]||'guard',e[4]||{});
   if(sc.phases[0].type!=='hold'&&sc.phases[0].type!=='elim')B.pl.forEach(u=>{u.mode='sneak';u.holdFire=true});
   drawBG();nextPhase();computeVis();
   $('hq').hidden=true;$('debrief').hidden=true;$('battle').hidden=false;
   $('b-title').textContent=sc.title;$('b-flare').hidden=!sc.night;$('banner').hidden=true;
-  $('squad').innerHTML=B.pl.map(u=>`<button class="uc" data-i="${u.idx}"><span class="num" title="숫자키 ${u.idx+1}">${u.idx+1}</span><span class="un">${esc(u.rank)} ${esc(u.name)}</span><span class="stt"></span><span class="uw"></span><span class="bars"><span class="b hp"><i></i></span><span class="b su"><i></i></span><span class="b ft"><i></i></span></span></button>`).join('');
+  $('squad').innerHTML=B.pl.map(u=>`<button class="uc" data-i="${u.idx}"><span class="num" title="숫자키 ${u.idx+1}">${u.idx+1}</span><span class="un">${u.role==='leader'?'<span class="star" title="분대장">★</span> ':''}${esc(u.rank)} ${esc(u.name)}</span><span class="stt"></span><span class="uw"></span><span class="bars"><span class="b hp"><i></i></span><span class="b su"><i></i></span><span class="b ft"><i></i></span></span></button>`).join('');
   $('brief').hidden=false;
   $('brief').innerHTML=`<div class="box"><div style="color:var(--muted);letter-spacing:.1em;font-size:12px">${sc.date} · ${diffTag(sc)}</div><h2>${sc.title}</h2><p>${sc.brief}</p>
     <p><b style="color:var(--accent)">임무</b> — ${sc.phases.map(p=>p.text).join(' → ')}</p><ul>${sc.tips.map(t=>`<li>${t}</li>`).join('')}</ul>
@@ -808,7 +812,6 @@ function endBattle(win,why,retreat){if(B.over)return;B.over=true;const sc=B.sc,r
     rep.push({s,status,kills:u.st.kills,shots:u.st.shots,hits:u.st.hits,gains,promo:!s.dead&&rankOf(s.xp)>r0?RANKS[rankOf(s.xp)]:null,rank:RANKS[r0]})}
   const went=new Set(B.pl.map(u=>u.ref));for(const s of C.roster)if(!went.has(s)&&!s.dead&&s.out>0)s.out--;
   if(win)C.done[sc.id]=true;C.count++;const pool=win?3:1;C.pts=(C.pts||0)+pool;const notes=[`분대 훈련 점수 +${pool} (보유 ${C.pts}). 본부 병적부에서 원하는 대원의 능력치를 골라 올리십시오.`];
-  if(!alive().some(s=>s.role==='leader')&&alive().length){const n=alive().sort((a,b)=>b.xp-a.xp)[0];n.role='leader';notes.push(`${n.name}이(가) 분대장 직을 이어받았습니다.`)}
   if(alive().length<6)notes.push('분대 인원이 모자랍니다. 본부에서 「신병 충원」을 눌러 보충병을 받으십시오.');
   C.roster=C.roster.filter(s=>!s.dead);
   if(win&&SC.indexOf(sc)===C.pick&&C.pick<SC.length-1)C.pick++;
@@ -918,6 +921,7 @@ function drawBG(){DPR=Math.min(2,window.devicePixelRatio||1);cv.width=CW*DPR;cv.
     for(let k=0;k<6;k++){const a=r()*6.28,d=r()*R0*.45;c.fillStyle=tc[1];c.beginPath();c.arc(x-R0*.14+Math.cos(a)*d,y-R0*.14+Math.sin(a)*d,R0*.36,0,7);c.fill()}
     for(let k=0;k<4;k++){const a=r()*6.28,d=r()*R0*.4;c.fillStyle=tc[2];c.globalAlpha=snow?.95:.8;c.beginPath();c.arc(x-R0*.28+Math.cos(a)*d,y-R0*.28+Math.sin(a)*d,R0*(snow?.3:.2),0,7);c.fill();c.globalAlpha=1}}}
 
+function star(cx,cy,r){ctx.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}ctx.closePath();ctx.lineWidth=2;ctx.strokeStyle='#000';ctx.stroke();ctx.fillStyle='#ffd23a';ctx.fill()}
 function drawUnit(u){const ln=ok(u)&&u.lean,x=u.x*TS+(ln?(ln.x-u.x)*TS*.45:0),y=u.y*TS+(ln?(ln.y-u.y)*TS*.45:0),p=u.side==='p',cn=B.sc.faction==='cn';
   if(!ok(u)){ctx.save();ctx.translate(x,y);ctx.rotate(u.face+1.2);ctx.fillStyle=p?'#3a4628':cn?'#9a8e6c':'#86692c';ctx.beginPath();ctx.ellipse(0,0,8,4,0,0,7);ctx.fill();if(u.loot){ctx.fillStyle='#16140e';ctx.fillRect(-2,6,11,2);ctx.fillStyle='#ffe28a';ctx.fillRect(8,5,2,2)}ctx.restore();
     if(p&&u.state==='down'){ctx.fillStyle=u.stab?'#b8e0a0':'#ff5a4a';ctx.fillRect(x-1.5,y-15,3,9);ctx.fillRect(x-4.5,y-12,9,3)}return}
@@ -934,7 +938,8 @@ function drawUnit(u){const ln=ok(u)&&u.lean,x=u.x*TS+(ln?(ln.x-u.x)*TS*.45:0),y=
   if(u.revealT>2.35){ctx.fillStyle='rgba(255,230,140,.9)';ctx.beginPath();ctx.arc(x+Math.cos(u.face)*14,y+Math.sin(u.face)*14,4,0,7);ctx.fill()}
   if(p){ctx.fillStyle='#000';ctx.fillRect(x-9,y-14,18,4);ctx.fillStyle=u.hp>u.maxhp*.5?'#8fb04a':'#d2604e';ctx.fillRect(x-8,y-13,16*u.hp/u.maxhp,2);
     if(u.supp>5){ctx.fillStyle='#ffd66b';ctx.fillRect(x-8,y-10,16*u.supp/100,1.5)}
-    ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.lineWidth=2.5;ctx.strokeStyle='#000';ctx.strokeText(u.idx+1,x,y-17);ctx.fillStyle='#fff';ctx.fillText(u.idx+1,x,y-17);
+    ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.lineWidth=2.5;ctx.strokeStyle='#000';if(u.role==='leader'){star(x-12,y-21,8);ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.lineWidth=2.5;ctx.strokeStyle='#000'}
+    ctx.strokeText(u.idx+1,x,y-17);ctx.fillStyle='#fff';ctx.fillText(u.idx+1,x,y-17);
     if(u.healT>0){ctx.strokeStyle='#b8e0a0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,12,-1.57,-1.57+6.28*u.healT/3.5);ctx.stroke()}}
   else{ctx.fillStyle=u.hvt?'#ffe28a':'#e0503c';ctx.beginPath();ctx.moveTo(x,y-10);ctx.lineTo(x-4,y-16);ctx.lineTo(x+4,y-16);ctx.fill();
     if(u.supp>55){ctx.fillStyle='#ffd66b';ctx.fillRect(x-6,y-19,12*u.supp/100,1.5)}}}
